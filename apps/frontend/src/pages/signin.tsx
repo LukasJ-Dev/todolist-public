@@ -1,16 +1,16 @@
-import styled from "styled-components";
-import Input from "../components/UI/Input";
-import StandardLayout from "../components/StandardLayout";
-import { Center } from "../components/UI/styles";
-import { colors } from "../styles/colors";
-import Button from "../components/UI/Button";
-import { useState, useEffect } from "react";
+import styled from 'styled-components';
+import Input from '../components/UI/Input';
+import StandardLayout from '../components/StandardLayout';
+import { Center } from '../components/UI/styles';
+import { colors } from '../styles/colors';
+import Button from '../components/UI/Button';
+import { useState, useEffect } from 'react';
 
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { selectIsLoggedIn } from "../features/auth/authSelector";
-import { AppDispatch } from "../app/store";
-import { LogIn } from "../features/auth/authAPI";
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectIsLoggedIn } from '../features/auth/authSelector';
+import { AppDispatch } from '../app/store';
+import { LogIn } from '../features/auth/authAPI';
 
 const SignupCard = styled.form`
   display: flex;
@@ -28,13 +28,13 @@ const SignIn = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isLoggedIn) navigate("/");
+    if (isLoggedIn) navigate('/');
   }, [isLoggedIn, navigate]);
 
-  const [error, setError] = useState({
-    general: "",
-    email: "",
-    password: "",
+  const [error, _setError] = useState({
+    general: '',
+    email: '',
+    password: '',
   });
 
   const handleSubmit = (e: React.SyntheticEvent) => {
@@ -69,7 +69,7 @@ const SignIn = () => {
           />
           <Button type="submit">Sign In</Button>
           <Link to="/signup">
-            <Button color={colors.blue["300"]}>Go to Sign Up</Button>
+            <Button color={colors.blue['300']}>Go to Sign Up</Button>
           </Link>
         </SignupCard>
       </Center>

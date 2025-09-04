@@ -1,32 +1,32 @@
-import { useEffect, useState } from "react";
-import TaskCard from "../TaskCard";
-import NewTaskCard from "../TaskCard/NewTask";
-import * as S from "./style";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from 'react';
+import TaskCard from '../TaskCard';
+import NewTaskCard from '../TaskCard/NewTask';
+import * as S from './style';
+import { useDispatch, useSelector } from 'react-redux';
 
-import EditTaskModal from "../EditTaskModal";
-import { createPortal } from "react-dom";
-import IconButton from "../UI/IconButton";
-import { FaCheckDouble, FaMinus, FaPen, FaTrash } from "react-icons/fa";
+import EditTaskModal from '../EditTaskModal';
+import { createPortal } from 'react-dom';
+import IconButton from '../UI/IconButton';
+import { FaPen, FaTrash } from 'react-icons/fa';
 
 import {
   selectTodolistName,
   selectAmountOfTodolists,
   selectSelectedItem,
-} from "../../features/todolist/todolistSelector";
+} from '../../features/todolist/todolistSelector';
 import {
   deleteTodolist,
   updateTodolist,
-} from "../../features/todolist/todolistAPI";
-import { AppDispatch } from "../../app/store";
-import { selectTasks } from "../../features/task/taskSelector";
+} from '../../features/todolist/todolistAPI';
+import { AppDispatch } from '../../app/store';
+import { selectTasks } from '../../features/task/taskSelector';
 import {
   deleteTask,
   fetchTasksByTodolist,
   postTask,
   updateTask,
-} from "../../features/task/taskAPI";
-import { TaskType } from "../../types";
+} from '../../features/task/taskAPI';
+import { TaskType } from '../../types';
 
 const Todolist = () => {
   const [editTask, setEditTask] = useState<TaskType | undefined>(undefined);
@@ -46,24 +46,24 @@ const Todolist = () => {
   }, [selectedItem]);
 
   const newTaskInput = async (name: string) => {
-    if (!selectedItem) return alert("no selected todolist");
+    if (!selectedItem) return alert('no selected todolist');
     dispatch(postTask({ name: name, todolist: selectedItem }));
   };
 
   const handleDeleteTodolist = async () => {
-    if (selectedItem === null) return alert("No todolist selected");
+    if (selectedItem === null) return alert('No todolist selected');
     if (todolistAmount === 1)
-      return alert("You cant have less than one todolist");
+      return alert('You cant have less than one todolist');
     const deleteConfirm = confirm(
-      "Are you sure you want to delete this todolist and all of its tasks? (This todolist will be GONE FOREVER)"
+      'Are you sure you want to delete this todolist and all of its tasks? (This todolist will be GONE FOREVER)'
     );
     if (deleteConfirm) dispatch(deleteTodolist(selectedItem));
   };
 
   const handleChangeName = async () => {
-    if (selectedItem === null) return alert("No todolist selected");
-    const newName = prompt("New Name");
-    if (!newName) return alert("Something went wrong");
+    if (selectedItem === null) return alert('No todolist selected');
+    const newName = prompt('New Name');
+    if (!newName) return alert('Something went wrong');
 
     dispatch(updateTodolist({ id: selectedItem, name: newName }));
   };
@@ -123,7 +123,7 @@ const Todolist = () => {
           onCancel={() => setEditTask(undefined)}
           onSave={(task) => saveEditTask(task)}
         />,
-        document.getElementById("edit-modal-element")!
+        document.getElementById('edit-modal-element')!
       )}
     </>
   );

@@ -1,11 +1,11 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../api/api";
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import api from '../../api/api';
 
 export const fetchTodolists = createAsyncThunk(
-  "todolist/fetchTodolist",
-  async (arg, thunkApi) => {
+  'todolist/fetchTodolist',
+  async (_arg, thunkApi) => {
     try {
-      const res = await api.get("/todolists");
+      const res = await api.get('/todolists');
       return res.data;
     } catch (err: any) {
       return thunkApi.rejectWithValue(err.response);
@@ -14,15 +14,15 @@ export const fetchTodolists = createAsyncThunk(
 );
 
 export const postTodolist = createAsyncThunk(
-  "todolist/postTodolist",
+  'todolist/postTodolist',
   async ({ name }: { name: string }) => {
-    const res = await api.post("/todolists", { name });
+    const res = await api.post('/todolists', { name });
     return res.data;
   }
 );
 
 export const updateTodolist = createAsyncThunk(
-  "todolists/updateTodolist",
+  'todolists/updateTodolist',
   async ({ id, name }: { id: string; name: string }) => {
     const res = await api.patch(`todolists/${id}`, { name });
     return res.data.data.todolist;
@@ -30,7 +30,7 @@ export const updateTodolist = createAsyncThunk(
 );
 
 export const deleteTodolist = createAsyncThunk(
-  "todolists/deleteTodolist",
+  'todolists/deleteTodolist',
   async (id: string) => {
     await api.delete(`todolists/${id}`);
     return id;

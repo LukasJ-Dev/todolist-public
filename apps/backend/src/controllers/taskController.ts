@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
-import { AuthenticatedRequest } from "../types";
-import { TaskModel } from "../models/taskModel";
-import { TodolistModel } from "../models/todolistModel";
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types';
+import { TaskModel } from '../models/taskModel';
+import { TodolistModel } from '../models/todolistModel';
 
 export const getMyTasks = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -12,7 +12,7 @@ export const getMyTasks = async (req: AuthenticatedRequest, res: Response) => {
       _id: req.query.todolist,
     });
 
-    if (!todolist) return res.status(404).json({ error: "No todolist found" });
+    if (!todolist) return res.status(404).json({ error: 'No todolist found' });
 
     const tasks = await TaskModel.find({ todolist: req.query.todolist });
 
@@ -45,7 +45,7 @@ export const updateTask = async (req: AuthenticatedRequest, res: Response) => {
     const taskId = req.params.task;
 
     if (!userId || !taskId) {
-      return res.status(400).json({ error: "Invalid request parameters" });
+      return res.status(400).json({ error: 'Invalid request parameters' });
     }
 
     const task = await TaskModel.findOne({
@@ -53,7 +53,7 @@ export const updateTask = async (req: AuthenticatedRequest, res: Response) => {
       owner: userId,
     });
 
-    if (!task) return res.status(404).json({ error: "Task not found" });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
 
     const editedTask = await TaskModel.findOneAndUpdate(
       { _id: taskId, owner: userId },
@@ -73,7 +73,7 @@ export const deleteTask = async (req: AuthenticatedRequest, res: Response) => {
     const taskId = req.params.task;
 
     if (!userId || !taskId) {
-      return res.status(400).json({ error: "Invalid request parameters" });
+      return res.status(400).json({ error: 'Invalid request parameters' });
     }
 
     const task = await TaskModel.findOne({
@@ -81,7 +81,7 @@ export const deleteTask = async (req: AuthenticatedRequest, res: Response) => {
       owner: userId,
     });
 
-    if (!task) return res.status(404).json({ error: "Task not found" });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
 
     task.deleteOne();
 

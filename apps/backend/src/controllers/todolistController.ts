@@ -1,7 +1,7 @@
-import { Response, Request } from "express";
-import { AuthenticatedRequest } from "../types";
-import { TodolistModel } from "../models/todolistModel";
-import { TaskModel } from "../models/taskModel";
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types';
+import { TodolistModel } from '../models/todolistModel';
+import { TaskModel } from '../models/taskModel';
 
 export const getMyTodolists = async (
   req: AuthenticatedRequest,
@@ -12,7 +12,7 @@ export const getMyTodolists = async (
     const todolists = await TodolistModel.find({ owner: userId });
     if (todolists.length <= 0) {
       await TodolistModel.create({
-        name: "My First Todolist",
+        name: 'My First Todolist',
         owner: userId,
       });
     }
@@ -48,7 +48,7 @@ export const updateTodolist = async (
     const todolistId = req.params.todolist;
 
     if (!userId || !todolistId) {
-      return res.status(400).json({ error: "Invalid request parameters" });
+      return res.status(400).json({ error: 'Invalid request parameters' });
     }
 
     const todolist = await TodolistModel.findOne({
@@ -56,7 +56,7 @@ export const updateTodolist = async (
       owner: userId,
     });
 
-    if (!todolist) return res.status(404).json({ error: "Todolist not found" });
+    if (!todolist) return res.status(404).json({ error: 'Todolist not found' });
 
     const editedTodolist = await TodolistModel.findOneAndUpdate(
       { _id: todolistId, owner: userId },
@@ -79,7 +79,7 @@ export const deleteTodolist = async (
     const todolistId = req.params.todolist;
 
     if (!userId || !todolistId) {
-      return res.status(400).json({ error: "Invalid request parameters" });
+      return res.status(400).json({ error: 'Invalid request parameters' });
     }
 
     const todolist = await TodolistModel.findOne({
@@ -87,7 +87,7 @@ export const deleteTodolist = async (
       owner: userId,
     });
 
-    if (!todolist) return res.status(404).json({ error: "Todolist not found" });
+    if (!todolist) return res.status(404).json({ error: 'Todolist not found' });
 
     todolist.deleteOne();
 
