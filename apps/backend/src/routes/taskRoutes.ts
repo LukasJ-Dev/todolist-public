@@ -1,16 +1,37 @@
-import { Router } from "express";
-import * as taskController from "../controllers/taskController";
+import { Router } from 'express';
+import * as taskController from '../controllers/taskController';
 
-import * as authController from "../controllers/authController";
+import { requireAuth } from '../middlewares/auth';
+import {
+  createTaskBody,
+  deleteTaskParams,
+  updateTaskBody,
+} from '../schemas/taskSchemas';
+import { validate } from '../middlewares/validate';
 
 const router: Router = Router();
 
-router.get("/", authController.auth, taskController.getMyTasks);
+router.get('/', requireAuth, taskController.getMyTasks);
 
-router.post("/", authController.auth, taskController.createTask);
+router.post(
+  '/',
+  requireAuth,
+  validate({ body: createTaskBody }),
+  taskController.createTask
+);
 
-router.patch("/:task", authController.auth, taskController.updateTask);
+router.patch(
+  '/:task',
+  requireAuth,
+  validate({ body: updateTaskBody }),
+  taskController.updateTask
+);
 
-router.delete("/:task", authController.auth, taskController.deleteTask);
+router.delete(
+  '/:task',
+  requireAuth,
+  validate({ params: deleteTaskParams }),
+  taskController.deleteTask
+);
 
 export default router;

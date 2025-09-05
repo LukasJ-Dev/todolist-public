@@ -1,23 +1,36 @@
-import { Router } from "express";
-import * as todolistController from "../controllers/todolistController";
+import { Router } from 'express';
+import * as todolistController from '../controllers/todolistController';
 
-import * as authController from "../controllers/authController";
+import { requireAuth } from '../middlewares/auth';
+import {
+  createTodolistBody,
+  deleteTodolistParams,
+  updateTodolistBody,
+} from '../schemas/todolistSchemas';
+import { validate } from '../middlewares/validate';
 
 const router: Router = Router();
 
-router.get("/", authController.auth, todolistController.getMyTodolists);
+router.get('/', requireAuth, todolistController.getMyTodolists);
 
-router.post("/", authController.auth, todolistController.createTodolist);
+router.post(
+  '/',
+  requireAuth,
+  validate({ body: createTodolistBody }),
+  todolistController.createTodolist
+);
 
 router.patch(
-  "/:todolist",
-  authController.auth,
+  '/:todolist',
+  requireAuth,
+  validate({ body: updateTodolistBody }),
   todolistController.updateTodolist
 );
 
 router.delete(
-  "/:todolist",
-  authController.auth,
+  '/:todolist',
+  requireAuth,
+  validate({ params: deleteTodolistParams }),
   todolistController.deleteTodolist
 );
 

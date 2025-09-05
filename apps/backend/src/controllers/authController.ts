@@ -1,79 +1,42 @@
-import { Request, Response, NextFunction } from "express";
-import { userModel } from "../models/userModel";
-import jwt from "jsonwebtoken";
-import { AuthenticatedRequest } from "../types";
-import "dotenv/config";
+import { Request, Response } from 'express';
+import { userModel } from '../models/userModel';
+import { catchAsync } from '../utils/catchAsync';
+import { AppError } from '../utils/appError';
+import {
+  signAccessToken,
+  validatePasswordAndEmail,
+} from '../services/authService';
+import response from '../utils/response';
 
-export const auth = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const token =
-    req.cookies?.jwt || req.headers.authorization?.split("Bearer ")[1];
-  if (!token) {
-    res.status(401).json({ message: "No token" });
-    return;
-  }
-  try {
-    if (!process.env.JWT_SECRET) return;
-    const userId = await jwt.verify(token, process.env.JWT_SECRET); //TODO: Replace MY-SECRET-KEY with .env
-    const user = await userModel.findById(userId);
-    if (!user) {
-      res.status(401).json({ message: "Auth failed" });
-      return;
-    }
-    req.user = user;
+export const signup = catchAsync(async (req: Request, res: Response) => {
+  const user = await userModel.create(req.body);
 
-    next();
-  } catch (e) {
-    res.status(401).json({ message: "Auth failed" });
-    return;
-  }
-};
+  const token = signAccessToken(user._id.toString());
 
-export const signup = async (req: Request, res: Response) => {
-  try {
-    if (!process.env.JWT_SECRET) return;
-    const user = await userModel.create(req.body);
+  const jwtExpires = 90; //TODO: Add JWTExpires
+  res.cookie('jwt', token, {
+    expires: new Date(Date.now() + jwtExpires * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    // sameSite: "none",
+    secure: false, // req.secure || req.headers["x-forwarded-proto"] === "https",
+  });
+  response.created(res, { user, token });
+});
 
-    const token = jwt.sign(user?._id.toString(), process.env.JWT_SECRET, {
-      expiresIn: "90d",
-    }); //TODO: MAKE A BETTER KEY
-    const jwtExpires = 90; //TODO: Add JWTExpires
-    res.cookie("jwt", token, {
-      expires: new Date(Date.now() + jwtExpires * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-      // sameSite: "none",
-      secure: false, // req.secure || req.headers["x-forwarded-proto"] === "https",
-    });
-    res.status(200).json({ data: user, token });
-  } catch (e) {
-    res.status(400).json({ error: e });
-  }
-};
+export const login = catchAsync(async (req: Request, res: Response) => {
+  const user = await validatePasswordAndEmail(
+    req.body.email,
+    req.body.password
+  );
+  if (!user) throw new AppError('Wrong email or password', 400);
 
-export const login = async (req: Request, res: Response) => {
-  try {
-    const user = await userModel
-      .findOne({ email: req.body.email })
-      .select("+password");
-    if (!user || !(await user.checkPassword(req.body.password, user.password!)))
-      return res.status(400).json({ message: "Wrong email or password" });
-
-    if (!process.env.JWT_SECRET) return;
-    const jwtExpires = 90; //TODO: Add JWTExpires
-    const token = jwt.sign(user._id.toString(), process.env.JWT_SECRET, {
-      expiresIn: "90d",
-    });
-    res.cookie("jwt", token, {
-      expires: new Date(Date.now() + jwtExpires * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-      // sameSite: "none",
-      secure: false, // req.secure || req.headers["x-forwarded-proto"] === "https",
-    });
-    res.status(200).json({ data: user, token });
-  } catch (e) {
-    res.status(400).json({ error: e });
-  }
-};
+  const jwtExpires = 90; //TODO: Add JWTExpires
+  const token = signAccessToken(user._id.toString());
+  res.cookie('jwt', token, {
+    expires: new Date(Date.now() + jwtExpires * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    // sameSite: "none",
+    secure: false, // req.secure || req.headers["x-forwarded-proto"] === "https",
+  });
+  response.ok(res, { user, token });
+});

@@ -1,6 +1,10 @@
-import { Request } from "express";
-import { IUser } from "./models/userModel";
+import { Request } from 'express';
 
 export interface AuthenticatedRequest extends Request {
-    user?: IUser
+  user?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  id?: string;
 }

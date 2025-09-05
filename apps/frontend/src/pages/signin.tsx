@@ -1,9 +1,9 @@
 import styled from 'styled-components';
-import Input from '../components/UI/Input';
+import { Input } from '../components/UI/input';
 import StandardLayout from '../components/StandardLayout';
 import { Center } from '../components/UI/styles';
 import { colors } from '../styles/colors';
-import Button from '../components/UI/Button';
+import { Button } from '../components/UI/button';
 import { useState, useEffect } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
@@ -53,20 +53,8 @@ const SignIn = () => {
     <StandardLayout>
       <Center>
         <SignupCard onSubmit={handleSubmit}>
-          <Input
-            label="Email"
-            type="email"
-            id="email"
-            name="email"
-            error={error.email}
-          />
-          <Input
-            label="Password"
-            type="password"
-            id="password"
-            name="password"
-            error={error.password}
-          />
+          <Input type="email" id="email" name="email" />
+          <Input type="password" id="password" name="password" />
           <Button type="submit">Sign In</Button>
           <Link to="/signup">
             <Button color={colors.blue['300']}>Go to Sign Up</Button>
