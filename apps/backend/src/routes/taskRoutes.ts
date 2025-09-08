@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as taskController from '../controllers/taskController';
 
-import { requireAuth } from '../middlewares/auth';
+import { requireAuthWithUser } from '../middlewares/auth';
 import {
   createTaskBody,
   deleteTaskParams,
@@ -11,25 +11,25 @@ import { validate } from '../middlewares/validate';
 
 const router: Router = Router();
 
-router.get('/', requireAuth, taskController.getMyTasks);
+router.get('/', requireAuthWithUser, taskController.getMyTasks);
 
 router.post(
   '/',
-  requireAuth,
+  requireAuthWithUser,
   validate({ body: createTaskBody }),
   taskController.createTask
 );
 
-router.patch(
+router.put(
   '/:task',
-  requireAuth,
+  requireAuthWithUser,
   validate({ body: updateTaskBody }),
   taskController.updateTask
 );
 
 router.delete(
   '/:task',
-  requireAuth,
+  requireAuthWithUser,
   validate({ params: deleteTaskParams }),
   taskController.deleteTask
 );

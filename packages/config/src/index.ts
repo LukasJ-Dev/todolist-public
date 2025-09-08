@@ -10,6 +10,13 @@ export const serverEnvSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  ACCESS_TOKEN_TTL_MS: z.string().default('900000'),
+  REFRESH_HASH_SECRET: z.string().min(1, 'Refresh hash secret is required'),
+  COOKIE_SAMESITE: z.string().default('lax'),
+  COOKIE_SECURE: z.string().default('false'),
+  COOKIE_DOMAIN: z.string().default(''),
+  ACCESS_COOKIE_NAME: z.string().default('access'),
+  REFRESH_COOKIE_NAME: z.string().default('refresh'),
 });
 
 export const clientEnvSchema = z.object({

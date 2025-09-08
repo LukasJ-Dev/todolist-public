@@ -1,20 +1,22 @@
-import { NextFunction, Response } from 'express';
-import { AuthenticatedRequest } from '../types';
+import { NextFunction, Response, Request } from 'express';
+import { AppError } from '../utils/appError';
+//import { AuthenticatedRequest } from '../types';
 
 export function errorHandler(
   err: any,
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) {
-  const status = res.statusCode || 500;
+  const error =
+    err instanceof AppError ? err : new AppError('Internal Server Error', 500);
 
-  console.error(err.message);
+  const status = error.statusCode || 500;
 
   res.status(status).json({
     status: status,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    requestId: req.id,
+    error: error,
+    success: false,
+    stack: process.env.NODE_ENV === 'production' ? null : error.stack,
   });
 }

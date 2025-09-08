@@ -1,4 +1,4 @@
-import * as S from "./style";
+import * as S from './style';
 
 interface Props {
   callback: (value: string) => void;
@@ -6,7 +6,8 @@ interface Props {
 
 const NewTaskCard: React.FC<Props> = ({ callback }) => {
   const onEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key == "Enter") {
+    if (event.key == 'Enter') {
+      console.log('onEnter');
       callback(event.currentTarget.value);
     }
   };

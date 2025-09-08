@@ -1,16 +1,16 @@
-import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "../features/auth/authSlice";
-import uiSlice from "../features/ui/uiSlice";
-import todolistSlice from "../features/todolist/todolistSlice";
-import taskSlice from "../features/task/taskSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import uiSlice from '../features/ui/uiSlice';
+import { baseApi } from '../services/api';
 
 const store = configureStore({
   reducer: {
-    auth: authReducer,
+    [baseApi.reducerPath]: baseApi.reducer,
     ui: uiSlice,
-    task: taskSlice,
-    todolist: todolistSlice,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(baseApi.middleware),
+  //  @ts-ignore
+  devTools: process.env.NODE_ENV !== 'production',
 });
 
 export type AppDispatch = typeof store.dispatch;

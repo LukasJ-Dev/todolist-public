@@ -3,7 +3,7 @@ import * as userController from '../controllers/userController';
 
 import * as authController from '../controllers/authController';
 import rateLimit from 'express-rate-limit';
-import { requireAuth } from '../middlewares/auth';
+import { requireAuth, requireAuthWithUser } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { loginBody, signupBody } from '../schemas/authSchemas';
 
@@ -30,6 +30,12 @@ router.post(
   authController.login
 );
 
-router.get('/', requireAuth, userController.getAllUsers);
+router.post('/logout', requireAuthWithUser, authController.logout);
+
+router.post('/refresh', authController.refresh);
+
+router.get('/me', requireAuthWithUser, authController.me);
+
+router.get('/', requireAuthWithUser, userController.getAllUsers);
 
 export default router;

@@ -1,4 +1,7 @@
+/*
+
 import { Request } from 'express';
+
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -8,3 +11,4 @@ export interface AuthenticatedRequest extends Request {
   };
   id?: string;
 }
+*/

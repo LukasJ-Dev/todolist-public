@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as todolistController from '../controllers/todolistController';
 
-import { requireAuth } from '../middlewares/auth';
+import { requireAuthWithUser } from '../middlewares/auth';
 import {
   createTodolistBody,
   deleteTodolistParams,
@@ -11,25 +11,25 @@ import { validate } from '../middlewares/validate';
 
 const router: Router = Router();
 
-router.get('/', requireAuth, todolistController.getMyTodolists);
+router.get('/', requireAuthWithUser, todolistController.getMyTodolists);
 
 router.post(
   '/',
-  requireAuth,
+  requireAuthWithUser,
   validate({ body: createTodolistBody }),
   todolistController.createTodolist
 );
 
 router.patch(
   '/:todolist',
-  requireAuth,
+  requireAuthWithUser,
   validate({ body: updateTodolistBody }),
   todolistController.updateTodolist
 );
 
 router.delete(
   '/:todolist',
-  requireAuth,
+  requireAuthWithUser,
   validate({ params: deleteTodolistParams }),
   todolistController.deleteTodolist
 );

@@ -7,11 +7,11 @@ import cors from 'cors';
 import morgan from 'morgan';
 import router from './routes/routes';
 import { requestId } from './middlewares/request_id';
-import { AuthenticatedRequest } from './types';
+//import { AuthenticatedRequest } from './types';
 import { notFound } from './middlewares/notFound';
 import { errorHandler } from './middlewares/errorHandler';
 
-const apiURL = '/api/v1';
+export const apiURL = '/api/v1';
 
 const app: Express = express();
 

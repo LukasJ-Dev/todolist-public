@@ -9,47 +9,53 @@ import { createPortal } from 'react-dom';
 import IconButton from '../UI/IconButton';
 import { FaPen, FaTrash } from 'react-icons/fa';
 
-import {
-  selectTodolistName,
-  selectAmountOfTodolists,
-  selectSelectedItem,
-} from '../../features/todolist/todolistSelector';
-import {
-  deleteTodolist,
-  updateTodolist,
-} from '../../features/todolist/todolistAPI';
 import { AppDispatch } from '../../app/store';
-import { selectTasks } from '../../features/task/taskSelector';
+import { selectSelectedItem } from '../../features/ui/uiSelector';
+import { TaskType, TodolistType } from '../../types';
 import {
-  deleteTask,
-  fetchTasksByTodolist,
-  postTask,
-  updateTask,
-} from '../../features/task/taskAPI';
-import { TaskType } from '../../types';
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
+  useGetTasksByTodolistQuery,
+  useUpdateTaskMutation,
+} from '../../services/taskApi';
+import {
+  useGetAllTodolistsQuery,
+  useUpdateTodolistMutation,
+} from '../../services/todolistApi';
+import { useDeleteTodolistMutation } from '../../services/todolistApi';
 
-const Todolist = () => {
+const TodolistView = ({ todolistId }: { todolistId: string }) => {
   const [editTask, setEditTask] = useState<TaskType | undefined>(undefined);
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const todolistName = useSelector(selectTodolistName);
+  const selectedItem = todolistId;
 
-  const todolistAmount = useSelector(selectAmountOfTodolists);
+  const { data: todolist } = useGetAllTodolistsQuery();
 
-  const selectedItem = useSelector(selectSelectedItem);
+  const todolistName = todolist?.find(
+    (todolist) => todolist._id === selectedItem
+  )?.name;
 
-  const tasks = useSelector(selectTasks);
+  const todolistAmount = todolist?.length;
 
-  useEffect(() => {
-    if (selectedItem) dispatch(fetchTasksByTodolist(selectedItem));
-  }, [selectedItem]);
+  const { data: tasks } = useGetTasksByTodolistQuery(selectedItem);
+
+  const [createTask] = useCreateTaskMutation();
+  const [deleteTodolist] = useDeleteTodolistMutation();
+  const [updateTask] = useUpdateTaskMutation();
+  const [deleteTask] = useDeleteTaskMutation();
+  const [updateTodolist] = useUpdateTodolistMutation();
 
   const newTaskInput = async (name: string) => {
     if (!selectedItem) return alert('no selected todolist');
-    dispatch(postTask({ name: name, todolist: selectedItem }));
+    createTask({
+      name: name,
+      todolist: selectedItem,
+      description: '',
+      checked: false,
+    });
   };
-
   const handleDeleteTodolist = async () => {
     if (selectedItem === null) return alert('No todolist selected');
     if (todolistAmount === 1)
@@ -57,32 +63,36 @@ const Todolist = () => {
     const deleteConfirm = confirm(
       'Are you sure you want to delete this todolist and all of its tasks? (This todolist will be GONE FOREVER)'
     );
-    if (deleteConfirm) dispatch(deleteTodolist(selectedItem));
+    if (deleteConfirm) deleteTodolist(selectedItem);
   };
 
+  /*
   const handleChangeName = async () => {
     if (selectedItem === null) return alert('No todolist selected');
     const newName = prompt('New Name');
     if (!newName) return alert('Something went wrong');
 
     dispatch(updateTodolist({ id: selectedItem, name: newName }));
-  };
+  };*/
+
+  const handleChangeName = async () => {};
+
   const handleCheck = async (checked: boolean, _id: string) => {
-    dispatch(updateTask({ _id, checked }));
+    updateTask({ _id, checked });
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    dispatch(deleteTask(taskId));
+    deleteTask(taskId);
   };
 
   const saveEditTask = async (task: TaskType) => {
-    dispatch(updateTask(task));
+    updateTask(task);
 
     setEditTask(undefined);
   };
 
   const handleEditTask = (taskId: string) => {
-    setEditTask(tasks.find((task) => task._id === taskId));
+    setEditTask(tasks?.find((task) => task._id === taskId));
   };
 
   return (
@@ -129,4 +139,4 @@ const Todolist = () => {
   );
 };
 
-export default Todolist;
+export default TodolistView;

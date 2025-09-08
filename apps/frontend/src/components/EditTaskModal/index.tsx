@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import * as S from "./style";
-import Input from "../UI/Input";
-import Button from "../UI/Button";
-import { theme } from "../../styles/themes";
-import { TaskType } from "../../types";
+import { useEffect, useRef, useState } from 'react';
+import * as S from './style';
+import { Input } from '../UI/input';
+import { Button } from '../UI/button';
+import { theme } from '../../styles/themes';
+import { TaskType } from '../../types';
 
 interface Props {
   task: TaskType | null;
@@ -15,19 +15,19 @@ const EditTaskModal: React.FC<Props> = ({ task = null, onSave, onCancel }) => {
   const isOpen = task !== null;
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  const [titleInput, setTitleInput] = useState("");
-  const [descriptionInput, setDescriptionInput] = useState("");
+  const [titleInput, setTitleInput] = useState('');
+  const [descriptionInput, setDescriptionInput] = useState('');
 
   useEffect(() => {
-    setTitleInput(task?.name || "");
-    setDescriptionInput(task?.description || "");
+    setTitleInput(task?.name || '');
+    setDescriptionInput(task?.description || '');
 
     if (isOpen && !dialogRef.current?.open) dialogRef.current?.showModal();
     else if (!isOpen && dialogRef.current?.open) dialogRef.current.close();
   }, [isOpen, task]);
 
   const handleSave = () => {
-    if (task === null) return alert("No task to save");
+    if (task === null) return alert('No task to save');
     const editedTask = { ...task };
     editedTask.name = titleInput;
     editedTask.description = descriptionInput;
@@ -42,12 +42,10 @@ const EditTaskModal: React.FC<Props> = ({ task = null, onSave, onCancel }) => {
       <S.DialogContainer>
         <S.Text>Edit Task</S.Text>
         <Input
-          label="Title"
           value={titleInput}
           onChange={(e) => setTitleInput(e.target.value)}
         />
         <Input
-          label="Description"
           value={descriptionInput}
           onChange={(e) => setDescriptionInput(e.target.value)}
         />

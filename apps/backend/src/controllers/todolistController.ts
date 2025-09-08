@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { AuthenticatedRequest } from '../types';
+import { Response, Request } from 'express';
+//import { AuthenticatedRequest } from '../types';
 import { TodolistModel } from '../models/todolistModel';
 import { TaskModel } from '../models/taskModel';
 import { catchAsync } from '../utils/catchAsync';
@@ -7,8 +7,8 @@ import response from '../utils/response';
 import { AppError } from '../utils/appError';
 
 export const getMyTodolists = catchAsync(
-  async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user?._id;
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
     const todolists = await TodolistModel.find({ owner: userId });
     if (todolists.length <= 0) {
       await TodolistModel.create({
@@ -21,8 +21,8 @@ export const getMyTodolists = catchAsync(
 );
 
 export const createTodolist = catchAsync(
-  async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user?._id;
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
     const newTodolist = await TodolistModel.create({
       name: req.body.name,
       owner: userId,
@@ -33,8 +33,8 @@ export const createTodolist = catchAsync(
 );
 
 export const updateTodolist = catchAsync(
-  async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user?._id;
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
     const todolistId = req.params.todolist;
 
     const todolist = await TodolistModel.findOne({
@@ -55,8 +55,8 @@ export const updateTodolist = catchAsync(
 );
 
 export const deleteTodolist = catchAsync(
-  async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user?._id;
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
     const todolistId = req.params.todolist;
 
     const todolist = await TodolistModel.findOne({

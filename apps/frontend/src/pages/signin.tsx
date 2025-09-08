@@ -1,68 +1,120 @@
-import styled from 'styled-components';
-import { Input } from '../components/UI/input';
 import StandardLayout from '../components/StandardLayout';
 import { Center } from '../components/UI/styles';
-import { colors } from '../styles/colors';
 import { Button } from '../components/UI/button';
-import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../components/UI/card';
+import { Input } from '../components/UI/input';
 
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectIsLoggedIn } from '../features/auth/authSelector';
-import { AppDispatch } from '../app/store';
-import { LogIn } from '../features/auth/authAPI';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-const SignupCard = styled.form`
-  display: flex;
-  flex-direction: column;
-  width: 250px;
-  gap: 12px;
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../components/UI/form';
+import { useLoginMutation, useMeQuery } from '../services/authApi';
 
-  padding-bottom: 15vh;
-`;
+const formSchema = z.object({
+  email: z.email().min(1, {
+    message: 'Email is required',
+  }),
+  password: z.string().min(1, {
+    message: 'Password is required',
+  }),
+});
 
-const SignIn = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const isLoggedIn = useSelector(selectIsLoggedIn);
+function newSignIn() {
+  const [login, { isLoading, error }] = useLoginMutation();
+  const { refetch } = useMeQuery();
 
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isLoggedIn) navigate('/');
-  }, [isLoggedIn, navigate]);
-
-  const [error, _setError] = useState({
-    general: '',
-    email: '',
-    password: '',
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    disabled: isLoading,
   });
+  console.log(error);
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    const target = e.target as typeof e.target & {
-      email: { value: string };
-      password: { value: string };
-    };
-    const email = target.email.value;
-    const password = target.password.value;
-
-    dispatch(LogIn({ email, password }));
-  };
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    const { email, password } = values;
+    await login({ email, password }).unwrap();
+    await refetch();
+  }
 
   return (
     <StandardLayout>
       <Center>
-        <SignupCard onSubmit={handleSubmit}>
-          <Input type="email" id="email" name="email" />
-          <Input type="password" id="password" name="password" />
-          <Button type="submit">Sign In</Button>
-          <Link to="/signup">
-            <Button color={colors.blue['300']}>Go to Sign Up</Button>
-          </Link>
-        </SignupCard>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="w-full max-w-sm"
+          >
+            <Card className="w-full max-w-sm">
+              <CardHeader>
+                <CardTitle>Login to your account</CardTitle>
+                <CardDescription>
+                  Enter your email below to login to your account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-6">
+                  <div className="grid gap-2">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col gap-2">
+                <Button type="submit" className="w-full">
+                  Login
+                </Button>
+              </CardFooter>
+            </Card>
+          </form>
+        </Form>
       </Center>
     </StandardLayout>
   );
-};
+}
 
-export default SignIn;
+export default newSignIn;

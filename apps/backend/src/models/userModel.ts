@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
@@ -8,6 +8,10 @@ export interface IUser extends Document {
   token: string;
 
   checkPassword(password: string, userPassword: string): Promise<boolean>;
+}
+
+export interface IUserModel extends Model<IUser> {
+  validateCredentials(email: string, password: string): Promise<IUser | null>;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -31,4 +35,16 @@ UserSchema.methods.checkPassword = async function (
   return compare;
 };
 
-export const userModel = model<IUser>('user', UserSchema);
+// validate credentials and return the user
+UserSchema.statics.validateCredentials = async function (
+  email: string,
+  password: string
+) {
+  const user = await this.findOne({ email }).select('+password');
+  if (!user) return null;
+  const isPasswordValid = await user?.checkPassword(password, user?.password!);
+  user.password = undefined;
+  return isPasswordValid ? user : null;
+};
+
+export const userModel = model<IUser, IUserModel>('user', UserSchema);

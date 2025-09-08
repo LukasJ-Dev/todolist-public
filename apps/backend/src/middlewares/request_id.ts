@@ -1,12 +1,8 @@
-import { Response, NextFunction } from 'express';
+import { Response, NextFunction, Request } from 'express';
 import { randomUUID } from 'crypto';
-import { AuthenticatedRequest } from '../types';
+//import { AuthenticatedRequest } from '../types';
 
-export function requestId(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) {
+export function requestId(req: Request, res: Response, next: NextFunction) {
   const headerId = req.headers['x-request-id'];
   const id = headerId && headerId.length < 100 ? headerId : randomUUID();
 
