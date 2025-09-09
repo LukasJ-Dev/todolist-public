@@ -8,6 +8,12 @@ import response from '../utils/response';
 export const getMyTasks = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
+  if (!req.query.todolist) {
+    const tasks = await TaskModel.find({ owner: userId });
+
+    return response.ok(res, { tasks });
+  }
+
   const todolist = await TodolistModel.findOne({
     owner: userId,
     _id: req.query.todolist,
@@ -15,7 +21,10 @@ export const getMyTasks = catchAsync(async (req: Request, res: Response) => {
 
   if (!todolist) throw new AppError('No todolist found', 404);
 
-  const tasks = await TaskModel.find({ todolist: req.query.todolist });
+  const tasks = await TaskModel.find({
+    todolist: req.query.todolist,
+    owner: userId,
+  });
 
   response.ok(res, { tasks });
 });

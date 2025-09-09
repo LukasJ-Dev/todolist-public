@@ -1,4 +1,4 @@
-import { TaskType, TodolistType } from '../types';
+import { TaskType } from '../types';
 import { baseApi } from './api';
 import { ApiSuccessResponse } from '@todolist/types';
 
@@ -11,6 +11,15 @@ type CreateTaskMutation = {
 
 export const taskApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
+    getAllTasks: build.query<TaskType[], void>({
+      query: () => ({
+        url: '/tasks',
+      }),
+      transformResponse: (
+        response: ApiSuccessResponse<{ tasks: TaskType[] }>
+      ) => response.data.tasks,
+      providesTags: ['Task'],
+    }),
     getTasksByTodolist: build.query<TaskType[], string>({
       query: (todolistId) => ({
         url: `/tasks?todolist=${todolistId}`,
@@ -56,4 +65,5 @@ export const {
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
+  useGetAllTasksQuery,
 } = taskApi;

@@ -7,8 +7,9 @@ export const createTaskBody = z.object({
 });
 
 export const updateTaskBody = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
+  checked: z.boolean().optional(),
 });
 
 export const deleteTaskParams = z.object({

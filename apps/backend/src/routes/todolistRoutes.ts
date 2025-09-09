@@ -20,7 +20,7 @@ router.post(
   todolistController.createTodolist
 );
 
-router.patch(
+router.put(
   '/:todolist',
   requireAuthWithUser,
   validate({ body: updateTodolistBody }),

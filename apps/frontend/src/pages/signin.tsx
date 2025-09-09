@@ -1,5 +1,3 @@
-import StandardLayout from '../components/StandardLayout';
-import { Center } from '../components/UI/styles';
 import { Button } from '../components/UI/button';
 import {
   Card,
@@ -24,6 +22,7 @@ import {
   FormMessage,
 } from '../components/UI/form';
 import { useLoginMutation, useMeQuery } from '../services/authApi';
+import { useNavigate } from 'react-router-dom';
 
 const formSchema = z.object({
   email: z.email().min(1, {
@@ -37,7 +36,7 @@ const formSchema = z.object({
 function newSignIn() {
   const [login, { isLoading, error }] = useLoginMutation();
   const { refetch } = useMeQuery();
-
+  const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -53,67 +52,66 @@ function newSignIn() {
     const { email, password } = values;
     await login({ email, password }).unwrap();
     await refetch();
+    navigate('/');
   }
 
   return (
-    <StandardLayout>
-      <Center>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="w-full max-w-sm"
-          >
-            <Card className="w-full max-w-sm">
-              <CardHeader>
-                <CardTitle>Login to your account</CardTitle>
-                <CardDescription>
-                  Enter your email below to login to your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-6">
-                  <div className="grid gap-2">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+    <div className="flex flex-col items-center justify-center h-screen">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="w-full max-w-sm"
+        >
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle>Login to your account</CardTitle>
+              <CardDescription>
+                Enter your email below to login to your account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </CardContent>
-              <CardFooter className="flex-col gap-2">
-                <Button type="submit" className="w-full">
-                  Login
-                </Button>
-              </CardFooter>
-            </Card>
-          </form>
-        </Form>
-      </Center>
-    </StandardLayout>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex-col gap-2">
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
+    </div>
   );
 }
 

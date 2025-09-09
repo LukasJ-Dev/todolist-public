@@ -16,29 +16,18 @@ import {
   SidebarMenuItem,
 } from '../../../components/UI/sidebar';
 
-import { Calendar, Home, Inbox, Search } from 'lucide-react';
+import { Inbox, Search } from 'lucide-react';
 import { selectSelectedItem } from '../../ui/uiSelector';
 import { setSelectedItem } from '../../ui/uiSlice';
+import { FaPlus } from 'react-icons/fa';
 
 const items = [
   {
-    title: 'Home',
-    url: '#',
-    icon: Home,
-  },
-  {
     title: 'Inbox',
-    url: '#',
     icon: Inbox,
   },
   {
-    title: 'Incoming',
-    url: '#',
-    icon: Calendar,
-  },
-  {
     title: 'Search',
-    url: '#',
     icon: Search,
   },
 ];
@@ -55,8 +44,11 @@ function TodolistHandler() {
 
   const [createTodolist] = useCreateTodolistMutation();
 
-  const handleNewTodolist = (name: string) => {
-    createTodolist({ name });
+  const newTodolistDialog = () => {
+    const newTodolistName = prompt('New Todolist Name');
+    if (newTodolistName) {
+      createTodolist({ name: newTodolistName });
+    }
   };
 
   return (
@@ -84,7 +76,15 @@ function TodolistHandler() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Todolists</SidebarGroupLabel>
+          <SidebarGroupLabel className="flex flex-row justify-between group">
+            <span>Todolists</span>
+            <div className="flex flex-row gap-4 items-center group-hover:visible invisible">
+              <FaPlus
+                onClick={() => newTodolistDialog()}
+                className="cursor-pointer text-gray-300 h-5 w-5 hover:text-gray-400"
+              />
+            </div>
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {todolists?.map((item) => (

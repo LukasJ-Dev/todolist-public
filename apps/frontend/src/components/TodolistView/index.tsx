@@ -1,34 +1,19 @@
-import { useEffect, useState } from 'react';
-import TaskCard from '../TaskCard';
-import NewTaskCard from '../TaskCard/NewTask';
-import * as S from './style';
-import { useDispatch, useSelector } from 'react-redux';
-
-import EditTaskModal from '../EditTaskModal';
-import { createPortal } from 'react-dom';
-import IconButton from '../UI/IconButton';
 import { FaPen, FaTrash } from 'react-icons/fa';
 
-import { AppDispatch } from '../../app/store';
-import { selectSelectedItem } from '../../features/ui/uiSelector';
-import { TaskType, TodolistType } from '../../types';
+import { Separator } from '../UI/separator';
 import {
   useCreateTaskMutation,
-  useDeleteTaskMutation,
   useGetTasksByTodolistQuery,
-  useUpdateTaskMutation,
 } from '../../services/taskApi';
 import {
   useGetAllTodolistsQuery,
   useUpdateTodolistMutation,
 } from '../../services/todolistApi';
 import { useDeleteTodolistMutation } from '../../services/todolistApi';
+import TaskCardList from '../task-card-list';
+import NewTask from '../new-task';
 
 const TodolistView = ({ todolistId }: { todolistId: string }) => {
-  const [editTask, setEditTask] = useState<TaskType | undefined>(undefined);
-
-  const dispatch = useDispatch<AppDispatch>();
-
   const selectedItem = todolistId;
 
   const { data: todolist } = useGetAllTodolistsQuery();
@@ -43,10 +28,7 @@ const TodolistView = ({ todolistId }: { todolistId: string }) => {
 
   const [createTask] = useCreateTaskMutation();
   const [deleteTodolist] = useDeleteTodolistMutation();
-  const [updateTask] = useUpdateTaskMutation();
-  const [deleteTask] = useDeleteTaskMutation();
   const [updateTodolist] = useUpdateTodolistMutation();
-
   const newTaskInput = async (name: string) => {
     if (!selectedItem) return alert('no selected todolist');
     createTask({
@@ -66,76 +48,36 @@ const TodolistView = ({ todolistId }: { todolistId: string }) => {
     if (deleteConfirm) deleteTodolist(selectedItem);
   };
 
-  /*
   const handleChangeName = async () => {
     if (selectedItem === null) return alert('No todolist selected');
     const newName = prompt('New Name');
     if (!newName) return alert('Something went wrong');
 
-    dispatch(updateTodolist({ id: selectedItem, name: newName }));
-  };*/
-
-  const handleChangeName = async () => {};
-
-  const handleCheck = async (checked: boolean, _id: string) => {
-    updateTask({ _id, checked });
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    deleteTask(taskId);
-  };
-
-  const saveEditTask = async (task: TaskType) => {
-    updateTask(task);
-
-    setEditTask(undefined);
-  };
-
-  const handleEditTask = (taskId: string) => {
-    setEditTask(tasks?.find((task) => task._id === taskId));
+    updateTodolist({ _id: selectedItem, name: newName });
   };
 
   return (
-    <>
-      <S.styledTodolist>
-        <S.TodolistHead>
-          <S.styledTitle>{todolistName}</S.styledTitle>
-          <S.ButtonContainer>
-            <IconButton
-              icon={FaPen}
-              size="32"
-              color="black"
+    <div className="flex flex-row gap-2 w-full justify-center p-6 pt-10">
+      <div className="flex flex-col gap-2 p-2 w-full max-w-5xl">
+        <div className="flex flex-row justify-between group">
+          <p className="text-2xl">{todolistName}</p>
+          <div className="flex flex-row gap-4 items-center group-hover:visible invisible">
+            <FaPen
               onClick={handleChangeName}
+              className="cursor-pointer text-gray-400 h-5 w-5 hover:text-gray-500"
             />
-            <IconButton
-              icon={FaTrash}
-              size="32"
-              color="black"
+            <FaTrash
               onClick={handleDeleteTodolist}
+              className="cursor-pointer text-gray-400 h-5 w-5 hover:text-gray-500"
             />
-          </S.ButtonContainer>
-        </S.TodolistHead>
+          </div>
+        </div>
 
-        {tasks?.map((task) => (
-          <TaskCard
-            key={task._id}
-            task={task}
-            onChecked={handleCheck}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-          />
-        ))}
-        <NewTaskCard callback={newTaskInput} />
-      </S.styledTodolist>
-      {createPortal(
-        <EditTaskModal
-          task={editTask || null}
-          onCancel={() => setEditTask(undefined)}
-          onSave={(task) => saveEditTask(task)}
-        />,
-        document.getElementById('edit-modal-element')!
-      )}
-    </>
+        <TaskCardList tasks={tasks || []} />
+        <NewTask callback={newTaskInput} />
+        <Separator />
+      </div>
+    </div>
   );
 };
 

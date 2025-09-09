@@ -1,13 +1,16 @@
 import { createSlice, Slice } from '@reduxjs/toolkit';
+import { TaskType } from '../../types';
 
 export interface uiState {
   showMenu: boolean;
   selectedItem: string;
+  selectedTask: TaskType | null;
 }
 
 const initialState: uiState = {
   showMenu: false,
   selectedItem: '',
+  selectedTask: null,
 };
 
 export const uiSlice: Slice<uiState> = createSlice({
@@ -20,9 +23,12 @@ export const uiSlice: Slice<uiState> = createSlice({
     setSelectedItem(state, action) {
       state.selectedItem = action.payload;
     },
+    setSelectedTask(state, action) {
+      state.selectedTask = action.payload;
+    },
   },
 });
 
-export const { toggleMenu, setSelectedItem } = uiSlice.actions;
+export const { toggleMenu, setSelectedItem, setSelectedTask } = uiSlice.actions;
 
 export default uiSlice.reducer;
