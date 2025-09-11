@@ -7,6 +7,9 @@ import jwt, {
 } from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../utils/appError';
+import { validateServerEnv } from '../../config/env';
+
+const env = validateServerEnv(process.env);
 
 export type CreateAccessTokenInput = {
   userId: string; // stringified ObjectId
@@ -37,11 +40,17 @@ function resolveSigningMaterial():
   | { alg: 'RS256'; key: string; kid?: string } {
   if (cachedMaterial) return cachedMaterial;
 
-  const alg = ((process.env.JWT_ALG as Alg) || 'HS256') as Alg;
-  const kid = process.env.JWT_KID || undefined;
+  const alg = env.JWT_ALG;
+  const kid =
+    env.JWT_KID && env.JWT_KID.trim() !== '' ? env.JWT_KID : undefined;
+
+  // Clear cache if kid has changed (to handle empty string to undefined transition)
+  if (cachedMaterial && cachedMaterial.kid !== kid) {
+    cachedMaterial = null;
+  }
 
   if (alg === 'HS256') {
-    const secret = process.env.JWT_SECRET;
+    const secret = env.JWT_SECRET;
     if (!secret || secret.length < 32)
       throw new AppError('JWT_SECRET missing/weak', 500);
     cachedMaterial = { alg, key: Buffer.from(secret, 'utf8'), kid };
@@ -49,7 +58,7 @@ function resolveSigningMaterial():
   }
 
   // RS256
-  const pk = process.env.JWT_PRIVATE_KEY;
+  const pk = env.JWT_PRIVATE_KEY;
   if (!pk) throw new Error('JWT_PRIVATE_KEY missing');
   cachedMaterial = { alg: 'RS256', key: pk, kid };
   return cachedMaterial;
@@ -60,8 +69,8 @@ export function createAccessToken({
   roles = [],
   ttlMs = 15 * 60 * 1000,
   now = new Date(),
-  issuer = process.env.JWT_ISS || 'app',
-  audience = process.env.JWT_AUD || 'app',
+  issuer = env.JWT_ISS,
+  audience = env.JWT_AUD,
   kid,
 }: CreateAccessTokenInput): CreateAccessTokenOutput {
   const mat = resolveSigningMaterial();
@@ -81,7 +90,7 @@ export function createAccessToken({
 
   const token = jwt.sign(payload, mat.key as any, {
     algorithm: mat.alg,
-    keyid: kid ?? mat.kid,
+    ...(kid && kid.trim() !== '' ? { keyid: kid } : {}),
     issuer,
     audience,
     // Let JWT library handle iat automatically
@@ -107,7 +116,7 @@ function resolveVerificationMaterial():
   const alg = ((process.env.JWT_ALG as Alg) || 'HS256') as Alg;
 
   if (alg === 'HS256') {
-    const secret = process.env.JWT_SECRET;
+    const secret = env.JWT_SECRET;
     if (!secret || secret.length < 32)
       throw new AppError('JWT_SECRET missing/weak', 500);
     cachedVerify = { alg, key: Buffer.from(secret, 'utf8') };
@@ -115,7 +124,7 @@ function resolveVerificationMaterial():
   }
 
   // RS256: verify with public key
-  const pub = process.env.JWT_PUBLIC_KEY;
+  const pub = env.JWT_PUBLIC_KEY;
   if (!pub) throw new AppError('JWT_PUBLIC_KEY missing', 500);
   cachedVerify = { alg: 'RS256', key: pub };
   return cachedVerify;
@@ -141,8 +150,8 @@ export function verifyAccessToken(
   token: string,
   {
     clockToleranceSec = 60,
-    issuer = process.env.JWT_ISS || 'app',
-    audience = process.env.JWT_AUD || 'app',
+    issuer = env.JWT_ISS,
+    audience = env.JWT_AUD,
   }: VerifyAccessTokenOptions = {}
 ): VerifiedAccessToken {
   if (!token) throw new AppError('Missing access token', 401);

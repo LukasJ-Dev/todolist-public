@@ -1,21 +1,11 @@
 // src/middleware/auth.middleware.ts
 import type { Request, Response, NextFunction } from 'express';
 import { readAccessFromRequest } from '../services/auth/cookieService';
-import {
-  verifyAccessToken,
-  type VerifiedAccessToken,
-} from '../services/auth/accessService';
+import { verifyAccessToken } from '../services/auth/accessService';
 import { AppError } from '../utils/appError';
 import { userModel } from '../models/userModel';
 
-// Augment Request to carry auth (and optionally user)
-declare module 'express' {
-  interface Request {
-    auth?: VerifiedAccessToken;
-    user?: { id: string; name: string; email: string } | null;
-    id?: string;
-  }
-}
+// Request interface is now defined in src/types/express.d.ts
 
 /** Require a valid access token. Attaches req.auth = { userId, roles, iat, exp, jti, iss, aud }. */
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {

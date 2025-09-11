@@ -7,8 +7,13 @@
     "outDir": "./dist",
     "noEmit": false,
     "jsx": "preserve",
-    "types": ["node"]
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules"],
+  "ts-node": {
+    "files": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }

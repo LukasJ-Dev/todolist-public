@@ -1,19 +1,18 @@
 // src/services/auth/cookies.service.ts
 import type { Request, Response } from 'express';
 import { apiURL } from '../../app';
+import { validateServerEnv } from '../../config/env';
+
+const env = validateServerEnv(process.env);
 
 type SameSite = 'lax' | 'strict' | 'none';
 
 function getDefaults() {
-  const sameSite =
-    (process.env.COOKIE_SAMESITE?.toLowerCase() as SameSite) || 'lax';
-  const secure =
-    process.env.NODE_ENV === 'production'
-      ? true
-      : process.env.COOKIE_SECURE === 'true';
-  const domain = process.env.COOKIE_DOMAIN || undefined;
-  const accessName = process.env.ACCESS_COOKIE_NAME || 'access';
-  const refreshName = process.env.REFRESH_COOKIE_NAME || 'refresh';
+  const sameSite = env.COOKIE_SAMESITE;
+  const secure = env.COOKIE_SECURE;
+  const domain = env.COOKIE_DOMAIN || undefined;
+  const accessName = env.ACCESS_COOKIE_NAME;
+  const refreshName = env.REFRESH_COOKIE_NAME;
   return { sameSite, secure, domain, accessName, refreshName };
 }
 
@@ -40,7 +39,6 @@ export function parseRefreshFromRequest(
   cookieName = getDefaults().refreshName
 ): string | null {
   const token = (req as any).cookies?.[cookieName];
-  console.log(getDefaults().refreshName);
   return typeof token === 'string' && token.length > 0 ? token : null;
 }
 

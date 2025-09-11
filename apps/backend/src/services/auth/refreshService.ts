@@ -3,6 +3,9 @@ import { randomBytes, createHmac, randomUUID } from 'crypto';
 import { PipelineStage, startSession, Types } from 'mongoose';
 import { refreshTokenModel } from '../../models/refreshTokens';
 import { AppError } from '../../utils/appError';
+import { validateServerEnv } from '../../config/env';
+
+const env = validateServerEnv(process.env);
 
 export type CreateRefreshTokenInput = {
   userId: string | Types.ObjectId;
@@ -30,7 +33,7 @@ export async function createRefreshToken({
   userAgent,
   fingerprint,
 }: CreateRefreshTokenInput): Promise<CreateRefreshTokenOutput> {
-  const secret = process.env.REFRESH_HASH_SECRET;
+  const secret = env.REFRESH_HASH_SECRET;
   if (!secret) throw new AppError('Missing REFRESH_HASH_SECRET', 500);
 
   const uid =
@@ -98,7 +101,7 @@ export async function rotateRefreshToken({
 }: RotateRefreshTokenInput): Promise<RotateRefreshTokenOutput> {
   if (!token) throw new AppError('Missing refresh token', 400);
 
-  const secret = process.env.REFRESH_HASH_SECRET;
+  const secret = env.REFRESH_HASH_SECRET;
   if (!secret) throw new AppError('Missing REFRESH_HASH_SECRET', 500);
 
   const tokenHash = createHmac('sha256', secret).update(token).digest('hex');

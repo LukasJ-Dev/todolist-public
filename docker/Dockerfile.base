@@ -1,0 +1,60 @@
+# Base Dockerfile for Node.js applications in the monorepo
+# This provides a common foundation for all Node.js services
+
+FROM node:22-alpine AS base
+
+# Install pnpm and common utilities
+RUN npm install -g pnpm && \
+    apk add --no-cache curl dumb-init && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy workspace configuration files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy all package.json files for dependency resolution
+COPY packages/*/package.json ./packages/*/
+COPY apps/*/package.json ./apps/*/
+
+# Install dependencies (this layer will be cached if package.json files don't change)
+RUN pnpm install --frozen-lockfile
+
+# Development stage
+FROM base AS development
+
+# Install development dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build shared packages
+RUN pnpm --filter @todolist/config build
+RUN pnpm --filter @todolist/types build
+
+# Switch to non-root user
+USER nodejs
+
+# Expose common ports
+EXPOSE 3000 5173
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Production stage
+FROM base AS production
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy built applications (to be overridden by specific Dockerfiles)
+COPY --chown=nodejs:nodejs . .
+
+# Switch to non-root user
+USER nodejs
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]

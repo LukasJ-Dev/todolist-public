@@ -10,10 +10,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^3.25.76"
+    "dotenv": "^16.4.5",
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@types/node": "^20.19.13",
+    "@types/dotenv": "^6.1.1",
     "typescript": "^5.0.4"
   }
 }

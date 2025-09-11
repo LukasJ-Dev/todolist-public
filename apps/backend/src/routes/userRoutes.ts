@@ -1,37 +1,33 @@
 import { Router } from 'express';
 import * as userController from '../controllers/userController';
-
 import * as authController from '../controllers/authController';
-import rateLimit from 'express-rate-limit';
-import { requireAuth, requireAuthWithUser } from '../middlewares/auth';
+import { requireAuthWithUser } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { loginBody, signupBody } from '../schemas/authSchemas';
+import { authLimiter, registrationLimiter } from '../middlewares/rateLimiting';
 
 const router: Router = Router();
 
-const limiter = rateLimit({
-  max: 50,
-  windowMs: 60 * 60 * 100,
-  message: 'Rate limit exceeded. Please try again in one hour.',
-  legacyHeaders: false,
-});
-
+// Registration with strict rate limiting
 router.post(
   '/signup',
   validate({ body: signupBody }),
-  limiter,
+  registrationLimiter,
   authController.signup
 );
 
+// Login with authentication rate limiting
 router.post(
   '/login',
   validate({ body: loginBody }),
-  limiter,
+  authLimiter,
   authController.login
 );
 
+// Logout (protected route)
 router.post('/logout', requireAuthWithUser, authController.logout);
 
+// Token refresh with authentication rate limiting
 router.post('/refresh', authController.refresh);
 
 router.get('/me', requireAuthWithUser, authController.me);

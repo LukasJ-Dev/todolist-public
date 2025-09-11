@@ -1,0 +1,138 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: todolist-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: todolist
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - todolist-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: todolist-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE: mongodb://admin:password123@mongodb:27017/todolist?authSource=admin
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      REFRESH_HASH_SECRET: your-super-secret-refresh-hash-key-change-this-in-production
+      JWT_ALG: HS256
+      JWT_KID: todolist-key-1
+      JWT_ISS: todolist-api
+      JWT_AUD: todolist-users
+      ACCESS_TOKEN_TTL_MS: 900000
+      REFRESH_TOKEN_TTL_MS: 604800000
+      COOKIE_SECURE: false
+      COOKIE_SAMESITE: lax
+      COOKIE_DOMAIN: localhost
+      ACCESS_COOKIE_NAME: accessToken
+      REFRESH_COOKIE_NAME: refreshToken
+      CORS_ORIGIN: http://localhost
+      CORS_CREDENTIALS: true
+      LOG_LEVEL: info
+      LOG_PRETTY: false
+      BCRYPT_ROUNDS: 12
+      SESSION_SECRET: your-session-secret-change-this-in-production
+      API_PREFIX: /api
+      API_VERSION: v1
+      HEALTH_CHECK_TIMEOUT_MS: 5000
+      TRUST_PROXY: 1
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      AUTH_RATE_LIMIT_WINDOW_MS: 900000
+      AUTH_RATE_LIMIT_MAX_REQUESTS: 5
+      STRICT_RATE_LIMIT_WINDOW_MS: 900000
+      STRICT_RATE_LIMIT_MAX_REQUESTS: 3
+      REGISTRATION_RATE_LIMIT_WINDOW_MS: 3600000
+      REGISTRATION_RATE_LIMIT_MAX_REQUESTS: 3
+      DATABASE_POOL_SIZE: 10
+      DATABASE_CONNECT_TIMEOUT_MS: 30000
+      DATABASE_SOCKET_TIMEOUT_MS: 45000
+    ports:
+      - '3000:3000'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - todolist-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: todolist-frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - todolist-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  todolist-network:
+    driver: bridge
