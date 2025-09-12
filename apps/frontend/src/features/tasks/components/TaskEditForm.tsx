@@ -9,11 +9,12 @@ import {
   FormItem,
   FormMessage,
   FormLabel,
-} from './UI/form';
-import { Input } from './UI/input';
-import { Textarea } from './UI/textarea';
+} from '../../../components/UI/form';
+import { Input } from '../../../components/UI/input';
+import { Textarea } from '../../../components/UI/textarea';
 import { TaskType } from '../types';
 import { useUpdateTaskMutation } from '../services/taskApi';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
   taskName: z.string(),
@@ -40,13 +41,28 @@ function EditTaskForm({
   });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
-    console.log(data);
-    await updateTask({
-      ...task,
-      name: data.taskName,
-      description: data.taskDescription,
-    }).unwrap();
-    closeDialog();
+    try {
+      await updateTask({
+        ...task,
+        name: data.taskName,
+        description: data.taskDescription,
+      }).unwrap();
+
+      toast.success('Task updated!', {
+        description: `Task "${data.taskName}" has been updated successfully.`,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      closeDialog();
+    } catch (error: any) {
+      const errorMessage =
+        error?.data?.message || 'Failed to update task. Please try again.';
+      toast.error('Update failed', {
+        description: errorMessage,
+      });
+      // Don't close the dialog on error - let user see the error and try again
+    }
   }
   return (
     <Form {...form}>

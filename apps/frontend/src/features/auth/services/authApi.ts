@@ -1,11 +1,21 @@
 import { LoginBody, SignupBody } from '@todolist/types';
-import { baseApi } from './api';
+import { baseApi } from '../../../api/api';
 import { ApiSuccessResponse } from '@todolist/types';
 
 type User = {
   id: string;
   name: string;
   email: string;
+};
+
+type Session = {
+  familyId: string;
+  createdAt: string;
+  lastUsedAt: string;
+  ipAddress?: string;
+  userAgent?: string;
+  active: boolean;
+  tokenCount: number;
 };
 
 export const authApi = baseApi.injectEndpoints({
@@ -52,6 +62,20 @@ export const authApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getSessions: builder.query<
+      Session[],
+      { includeRevoked?: boolean; limit?: number }
+    >({
+      query: ({ includeRevoked = false, limit = 20 } = {}) => ({
+        url: '/auth/sessions',
+        method: 'GET',
+        params: { includeRevoked, limit },
+      }),
+      transformResponse: (
+        response: ApiSuccessResponse<{ sessions: Session[] }>
+      ) => response.data.sessions,
+      providesTags: ['Sessions'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -61,4 +85,5 @@ export const {
   useLoginMutation,
   useMeQuery,
   useLogoutMutation,
+  useGetSessionsQuery,
 } = authApi;

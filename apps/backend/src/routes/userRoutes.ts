@@ -32,6 +32,8 @@ router.post('/refresh', authController.refresh);
 
 router.get('/me', requireAuthWithUser, authController.me);
 
+router.get('/sessions', requireAuthWithUser, authController.getSessions);
+
 router.get('/', requireAuthWithUser, userController.getAllUsers);
 
 export default router;

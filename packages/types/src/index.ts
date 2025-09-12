@@ -5,7 +5,7 @@ import {
   ApiSuccessResponse,
 } from './api/common';
 
-export {
+export type {
   SignupBody,
   LoginBody,
   AuthResponse,

@@ -4,21 +4,21 @@ interface Props {
   task: TaskType;
 }
 
-import EditDialog from './edit-task-dialog';
+import EditDialog from '../dialogs/EditTaskDialog';
 import { useUpdateTaskMutation } from '../services/taskApi';
-import TaskCheckbox from './UI/task-checkbox';
+import TaskCheckbox from '../../../components/UI/task-checkbox';
+import { useTouch } from '../../../hooks/useTouch';
 
 function TaskCard({ task }: Props) {
   const [updateTask] = useUpdateTaskMutation();
+  const isTouch = useTouch();
 
   const handleCheck = (checked: boolean) => {
-    console.log(checked);
-    console.log(task._id);
-    updateTask({ _id: task._id, checked });
+    updateTask({ ...task, checked });
   };
 
   return (
-    <div className="flex gap-2 w-full justify-between hover:bg-gray-200 group">
+    <div className="flex gap-2 w-full justify-between hover:bg-blue-50 group">
       <div className="flex items-center gap-2">
         <TaskCheckbox
           onChecked={(checked: boolean) => handleCheck(checked)}
@@ -33,8 +33,10 @@ function TaskCard({ task }: Props) {
           </span>
         </div>
       </div>
-      <div className="flex flex-row gap-6 items-center p-2 group-hover:visible invisible">
-        {/* When hovering the TaskCard, the pen should be visible */}
+      <div
+        className={`flex flex-row gap-6 items-center p-2 ${isTouch ? 'visible' : 'group-hover:visible invisible'}`}
+      >
+        {/* When hovering the TaskCard, the pen should be visible on desktop, always visible on touch devices */}
         <EditDialog task={task} />
       </div>
     </div>

@@ -28,23 +28,30 @@ export async function createSession(): Promise<ClientSession> {
 }
 
 /**
- * Executes a function within a transaction
+ * Executes a function within a transaction (if supported) or without transaction (fallback)
  */
 export async function withTransaction<T>(
-  fn: (session: ClientSession) => Promise<T>
+  fn: (session: ClientSession | null) => Promise<T>
 ): Promise<T> {
-  const session = await createSession();
-
   try {
+    // Try to use transactions (works with replica sets)
+    const session = await createSession();
     session.startTransaction();
     const result = await fn(session);
     await session.commitTransaction();
-    return result;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
     session.endSession();
+    return result;
+  } catch (error: any) {
+    // If transaction fails due to standalone MongoDB, fallback to non-transactional
+    if (error.code === 20 || error.codeName === 'IllegalOperation') {
+      console.warn(
+        'MongoDB transactions not supported, falling back to non-transactional operations'
+      );
+      return await fn(null);
+    }
+
+    // Re-throw other errors
+    throw error;
   }
 }
 

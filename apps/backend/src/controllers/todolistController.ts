@@ -217,15 +217,18 @@ export const deleteTodolist = catchAsync(
 
       validateOwnership(todolist, userId, 'Todolist');
 
-      // Use transaction to ensure atomicity
+      // Use transaction to ensure atomicity (fallback to non-transactional for standalone MongoDB)
       await withTransaction(async (session) => {
         // Delete all tasks in the todolist
-        await TaskModel.deleteMany({ todolist: todolistId }, { session });
+        await TaskModel.deleteMany(
+          { todolist: todolistId },
+          session ? { session } : {}
+        );
 
         // Delete the todolist
         await TodolistModel.deleteOne(
           { _id: todolistId, owner: userId },
-          { session }
+          session ? { session } : {}
         );
       });
 

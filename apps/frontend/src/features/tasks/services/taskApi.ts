@@ -1,5 +1,5 @@
 import { TaskType } from '../types';
-import { baseApi } from './api';
+import { baseApi } from '../../../api/api';
 import { ApiSuccessResponse } from '@todolist/types';
 
 type CreateTaskMutation = {
@@ -41,7 +41,7 @@ export const taskApi = baseApi.injectEndpoints({
     }),
     updateTask: build.mutation<TaskType, TaskType>({
       query: (task) => ({
-        url: `/tasks/${task._id}`,
+        url: `/tasks/${task.id}`,
         method: 'PUT',
         body: task,
       }),

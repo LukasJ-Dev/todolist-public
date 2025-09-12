@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './UI/dialog';
-import { Button } from './UI/button';
+} from '../../../components/UI/dialog';
+import { Button } from '../../../components/UI/button';
 import { TaskType } from '../types';
 import { useDeleteTaskMutation } from '../services/taskApi';
 
@@ -16,7 +16,7 @@ function DeleteDialog({ task }: { task: TaskType }) {
   const [deleteTask] = useDeleteTaskMutation();
 
   const handleDelete = () => {
-    deleteTask(task._id);
+    deleteTask(task.id);
   };
 
   return (

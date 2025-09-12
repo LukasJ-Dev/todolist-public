@@ -6,6 +6,7 @@ import {
   createRefreshToken,
   revokeRefreshToken,
   rotateRefreshToken,
+  listUserSessions,
 } from '../services/auth/refreshService';
 import response from '../utils/response';
 import {
@@ -476,4 +477,103 @@ export const me = catchAsync(async (req: Request, res: Response) => {
   return response.ok(res, {
     user: { id: String(doc._id), name: doc.name, email: doc.email },
   });
+});
+
+/**
+ * @swagger
+ * /api/v1/auth/sessions:
+ *   get:
+ *     summary: Get all active sessions for the current user
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: includeRevoked
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Whether to include revoked/expired sessions
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Maximum number of sessions to return
+ *     responses:
+ *       200:
+ *         description: Sessions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 sessions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       familyId:
+ *                         type: string
+ *                         description: Unique session family ID
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the session was first created
+ *                       lastUsedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Last time the session was used
+ *                       ipAddress:
+ *                         type: string
+ *                         description: IP address of the session
+ *                       userAgent:
+ *                         type: string
+ *                         description: Browser/device information
+ *                       active:
+ *                         type: boolean
+ *                         description: Whether the session is currently active
+ *                       tokenCount:
+ *                         type: integer
+ *                         description: Number of tokens in this session family
+ *             examples:
+ *               success:
+ *                 summary: Active sessions
+ *                 value:
+ *                   success: true
+ *                   sessions:
+ *                     - familyId: "507f1f77bcf86cd799439011"
+ *                       createdAt: "2024-01-15T10:30:00.000Z"
+ *                       lastUsedAt: "2024-01-15T14:22:00.000Z"
+ *                       ipAddress: "192.168.1.100"
+ *                       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+ *                       active: true
+ *                       tokenCount: 1
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+export const getSessions = catchAsync(async (req: Request, res: Response) => {
+  if (!req.auth) throw new AppError('Unauthorized', 401);
+
+  const { includeRevoked = false, limit = 20 } = req.query;
+
+  // Parse and validate parameters
+  const includeRevokedBool = includeRevoked === 'true';
+  const limitNum = Math.min(Math.max(parseInt(String(limit)) || 20, 1), 100);
+
+  const sessions = await listUserSessions(req.auth.userId, {
+    includeRevoked: includeRevokedBool,
+    limit: limitNum,
+  });
+
+  return response.ok(res, { sessions });
 });

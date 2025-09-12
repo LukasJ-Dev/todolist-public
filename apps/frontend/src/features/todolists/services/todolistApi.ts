@@ -1,4 +1,4 @@
-import { baseApi } from './api';
+import { baseApi } from '../../../api/api';
 import { ApiSuccessResponse } from '@todolist/types';
 import { TodolistType } from '../types';
 
@@ -31,7 +31,7 @@ export const todolistApi = baseApi.injectEndpoints({
     }),
     updateTodolist: build.mutation<TodolistType, TodolistType>({
       query: (todolist) => ({
-        url: `/todolists/${todolist._id}`,
+        url: `/todolists/${todolist.id}`,
         method: 'PUT',
         body: todolist,
       }),

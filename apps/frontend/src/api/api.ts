@@ -5,8 +5,6 @@ import {
   type FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
 
-import { SignupBody } from '@todolist/types';
-
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 // ---- Bare base query (cookies only; no CSRF) ----
 const rawBaseQuery = fetchBaseQuery({
