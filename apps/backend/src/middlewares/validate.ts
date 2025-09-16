@@ -1,11 +1,11 @@
-import { AnyZodObject, ZodError } from 'zod';
+import { ZodObject, ZodRawShape, ZodError } from 'zod';
 import { NextFunction, Response, Request } from 'express';
 import { AppError } from '../utils/appError';
 
 type Schemas = {
-  body?: AnyZodObject;
-  params?: AnyZodObject;
-  query?: AnyZodObject;
+  body?: ZodObject<ZodRawShape>;
+  params?: ZodObject<ZodRawShape>;
+  query?: ZodObject<ZodRawShape>;
 };
 
 export const validate =

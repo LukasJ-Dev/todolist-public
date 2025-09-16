@@ -36,6 +36,7 @@ export default function SignupForm() {
 
   const onSubmit = async (values: SignupFormData) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...signupData } = values;
       await signup(signupData).unwrap();
       await refetch();

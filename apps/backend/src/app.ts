@@ -1,5 +1,3 @@
-// Environment variables are loaded in server.ts
-
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import express, { Express } from 'express';

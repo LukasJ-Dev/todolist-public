@@ -1,0 +1,42 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": false,
+    "isolatedModules": true,
+    "moduleResolution": "node",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "preserveWatchOutput": true,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "include": [
+    "apps/backend/src/**/*",
+    "apps/frontend/src/**/*",
+    "packages/*/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ],
+  "references": [
+    {
+      "path": "./packages/config"
+    },
+    {
+      "path": "./packages/types"
+    },
+    {
+      "path": "./apps/backend"
+    },
+    {
+      "path": "./apps/frontend"
+    }
+  ]
+}

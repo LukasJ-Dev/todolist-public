@@ -55,7 +55,7 @@ function createLogger(): pino.Logger {
 
 // Export logger with lazy initialization
 export const logger = new Proxy({} as pino.Logger, {
-  get(target, prop) {
+  get(_, prop) {
     return createLogger()[prop as keyof pino.Logger];
   },
 });
