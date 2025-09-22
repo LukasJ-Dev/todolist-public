@@ -11,6 +11,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      NODE_ENV: test
+      DATABASE: mongodb://localhost:27017/test
+      JWT_SECRET: test-jwt-secret-key-for-ci
+      REFRESH_HASH_SECRET: test-refresh-hash-secret-for-ci
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
