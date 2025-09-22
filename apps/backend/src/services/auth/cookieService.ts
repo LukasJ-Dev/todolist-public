@@ -1,130 +1,293 @@
-// src/services/auth/cookies.service.ts
+// src/services/auth/cookieService.ts
 import type { Request, Response } from 'express';
-import { apiURL } from '../../app';
+// import { apiURL } from '../../app'; // Removed to avoid circular dependency
 import { validateServerEnv } from '../../config/env';
+import { AppError } from '../../utils/appError';
 
-const env = validateServerEnv(process.env);
+// ============================================================================
+// TYPES FOR DEPENDENCY INJECTION
+// ============================================================================
 
 type SameSite = 'lax' | 'strict' | 'none';
 
-function getDefaults() {
-  const sameSite = env.COOKIE_SAMESITE;
-  const secure = env.COOKIE_SECURE;
-  const domain = env.COOKIE_DOMAIN || undefined;
-  const accessName = env.ACCESS_COOKIE_NAME;
-  const refreshName = env.REFRESH_COOKIE_NAME;
-  return { sameSite, secure, domain, accessName, refreshName };
+interface CookieDefaults {
+  sameSite: SameSite;
+  secure: boolean;
+  domain?: string;
+  accessName: string;
+  refreshName: string;
 }
 
-/** Read the access token from cookie or Authorization header. */
+interface RequestWithCookies extends Omit<Request, 'cookies'> {
+  cookies?: Record<string, string>;
+}
+
+interface CookieOptions {
+  sameSite: SameSite;
+  secure: boolean;
+  domain?: string;
+  accessName: string;
+  refreshName: string;
+}
+
+// ============================================================================
+// COOKIE SERVICE CLASS
+// ============================================================================
+
+export class CookieService {
+  constructor(
+    private env: ReturnType<typeof validateServerEnv>,
+    private baseApiURL: string = 'http://localhost:3000'
+  ) {}
+
+  private getDefaults(): CookieDefaults {
+    return {
+      sameSite: this.env.COOKIE_SAMESITE,
+      secure: this.env.COOKIE_SECURE,
+      domain: this.env.COOKIE_DOMAIN || undefined,
+      accessName: this.env.ACCESS_COOKIE_NAME,
+      refreshName: this.env.REFRESH_COOKIE_NAME,
+    };
+  }
+
+  private validateCookieOptions(options: CookieOptions): void {
+    if (options.sameSite === 'none' && !options.secure) {
+      throw new AppError('SameSite=None requires Secure cookies', 400);
+    }
+  }
+
+  private validateTokens(accessToken: string, refreshToken: string): void {
+    if (
+      !accessToken ||
+      typeof accessToken !== 'string' ||
+      accessToken.trim().length === 0
+    ) {
+      throw new AppError(
+        'Access token is required and must be a non-empty string',
+        400
+      );
+    }
+    if (
+      !refreshToken ||
+      typeof refreshToken !== 'string' ||
+      refreshToken.trim().length === 0
+    ) {
+      throw new AppError(
+        'Refresh token is required and must be a non-empty string',
+        400
+      );
+    }
+  }
+
+  readAccessFromRequest(
+    req: RequestWithCookies,
+    cookieName?: string
+  ): string | null {
+    const defaults = this.getDefaults();
+    const name = cookieName ?? defaults.accessName;
+
+    // Cookie (preferred)
+    const cookieVal = req.cookies?.[name];
+    if (typeof cookieVal === 'string' && cookieVal.length > 0) {
+      return cookieVal;
+    }
+
+    // Authorization: Bearer <token>
+    const auth = req.header('authorization') || req.header('Authorization');
+    if (auth && auth.startsWith('Bearer ')) {
+      return auth.slice('Bearer '.length).trim();
+    }
+
+    return null;
+  }
+
+  parseRefreshFromRequest(
+    req: RequestWithCookies,
+    cookieName?: string
+  ): string | null {
+    const defaults = this.getDefaults();
+    const name = cookieName ?? defaults.refreshName;
+
+    const token = req.cookies?.[name];
+    return typeof token === 'string' && token.length > 0 ? token : null;
+  }
+
+  private setAccessCookie(
+    res: Response,
+    token: string,
+    ttlMs: number,
+    options: CookieOptions
+  ): void {
+    res.cookie(options.accessName, token, {
+      httpOnly: true,
+      secure: options.secure,
+      sameSite: options.sameSite,
+      domain: options.domain,
+      path: '/',
+      maxAge: ttlMs,
+    });
+  }
+
+  private setRefreshCookie(
+    res: Response,
+    token: string,
+    expiresAt: Date,
+    options: CookieOptions
+  ): void {
+    res.cookie(options.refreshName, token, {
+      httpOnly: true,
+      secure: options.secure,
+      sameSite: options.sameSite,
+      domain: options.domain,
+      path: `${this.baseApiURL}/auth/refresh`,
+      expires: expiresAt,
+    });
+  }
+
+  issueAuthCookies({
+    res,
+    accessToken,
+    accessTtlMs,
+    refreshToken,
+    refreshExpiresAt,
+    cookieDomain,
+    sameSite,
+    secure,
+    accessName,
+    refreshName,
+  }: {
+    res: Response;
+    accessToken: string;
+    accessTtlMs: number;
+    refreshToken: string;
+    refreshExpiresAt: Date;
+    cookieDomain?: string;
+    sameSite?: SameSite;
+    secure?: boolean;
+    accessName?: string;
+    refreshName?: string;
+  }): void {
+    // Validate inputs
+    this.validateTokens(accessToken, refreshToken);
+
+    const defaults = this.getDefaults();
+    const options: CookieOptions = {
+      sameSite: (sameSite ?? defaults.sameSite) as SameSite,
+      secure: secure ?? defaults.secure,
+      domain: cookieDomain ?? defaults.domain,
+      accessName: accessName ?? defaults.accessName,
+      refreshName: refreshName ?? defaults.refreshName,
+    };
+
+    // Validate cookie options
+    this.validateCookieOptions(options);
+
+    // Set cookies
+    this.setAccessCookie(res, accessToken, accessTtlMs, options);
+    this.setRefreshCookie(res, refreshToken, refreshExpiresAt, options);
+  }
+
+  clearAuthCookies({
+    res,
+    cookieDomain,
+    accessName,
+    refreshName,
+  }: {
+    res: Response;
+    cookieDomain?: string;
+    accessName?: string;
+    refreshName?: string;
+  }): void {
+    const defaults = this.getDefaults();
+    const domain = cookieDomain ?? defaults.domain;
+    const accessNameFinal = accessName ?? defaults.accessName;
+    const refreshNameFinal = refreshName ?? defaults.refreshName;
+
+    const baseOptions = {
+      httpOnly: true,
+      secure: true, // keep secure on clears
+      domain,
+    } as const;
+
+    res.clearCookie(accessNameFinal, { ...baseOptions, path: '/' });
+    res.clearCookie(refreshNameFinal, {
+      ...baseOptions,
+      path: '/auth/refresh',
+    });
+  }
+}
+
+// ============================================================================
+// FACTORY FUNCTION FOR EASY INSTANTIATION
+// ============================================================================
+
+/**
+ * Creates a CookieService instance with default dependencies
+ * @param env - Server environment configuration
+ * @param baseApiURL - Base API URL for cookie paths (optional)
+ * @returns CookieService instance
+ */
+export function createCookieService(
+  env: ReturnType<typeof validateServerEnv>,
+  baseApiURL: string = 'http://localhost:3000'
+): CookieService {
+  return new CookieService(env, baseApiURL);
+}
+
+// ============================================================================
+// LEGACY FUNCTION EXPORTS FOR BACKWARD COMPATIBILITY
+// ============================================================================
+
+/**
+ * @deprecated Use CookieService class instead. This function will be removed in a future version.
+ */
 export function readAccessFromRequest(
   req: Request,
-  cookieName = getDefaults().accessName
+  cookieName?: string
 ): string | null {
-  // Cookie (preferred)
-  const cookieVal = (req as any).cookies?.[cookieName];
-  if (typeof cookieVal === 'string' && cookieVal.length > 0) return cookieVal;
-
-  // Authorization: Bearer <token>
-  const auth = req.header('authorization') || req.header('Authorization');
-  if (auth && auth.startsWith('Bearer '))
-    return auth.slice('Bearer '.length).trim();
-
-  return null;
+  const service = createCookieService(validateServerEnv(process.env));
+  return service.readAccessFromRequest(req as any, cookieName);
 }
 
-/** Read the refresh token from cookie only (should never be in headers). */
+/**
+ * @deprecated Use CookieService class instead. This function will be removed in a future version.
+ */
 export function parseRefreshFromRequest(
   req: Request,
-  cookieName = getDefaults().refreshName
+  cookieName?: string
 ): string | null {
-  const token = (req as any).cookies?.[cookieName];
-  return typeof token === 'string' && token.length > 0 ? token : null;
+  const service = createCookieService(validateServerEnv(process.env));
+  return service.parseRefreshFromRequest(req as any, cookieName);
 }
 
-export type IssueCookiesInput = {
+/**
+ * @deprecated Use CookieService class instead. This function will be removed in a future version.
+ */
+export function issueAuthCookies(input: {
   res: Response;
   accessToken: string;
-  accessTtlMs: number; // should match access token TTL
-  refreshToken: string; // raw (from create/rotate)
-  refreshExpiresAt: Date; // absolute expiry for the refresh cookie
+  accessTtlMs: number;
+  refreshToken: string;
+  refreshExpiresAt: Date;
   cookieDomain?: string;
   sameSite?: SameSite;
   secure?: boolean;
   accessName?: string;
   refreshName?: string;
-};
-
-/** Set HttpOnly, Secure cookies for access and refresh tokens. */
-export function issueAuthCookies({
-  res,
-  accessToken,
-  accessTtlMs,
-  refreshToken,
-  refreshExpiresAt,
-  cookieDomain,
-  sameSite,
-  secure,
-  accessName,
-  refreshName,
-}: IssueCookiesInput): void {
-  const defs = getDefaults();
-  const _sameSite = (sameSite ?? defs.sameSite) as SameSite;
-  const _secure = secure ?? defs.secure;
-  const _domain = cookieDomain ?? defs.domain;
-  const _accessName = accessName ?? defs.accessName;
-  const _refreshName = refreshName ?? defs.refreshName;
-
-  // If SameSite=None, cookie MUST be Secure
-  if (_sameSite === 'none' && !_secure) {
-    throw new Error('SameSite=None requires Secure cookies');
-  }
-
-  // Access cookie (short path, short TTL)
-  res.cookie(_accessName, accessToken, {
-    httpOnly: true,
-    secure: _secure,
-    sameSite: _sameSite,
-    domain: _domain,
-    path: '/',
-    maxAge: accessTtlMs,
-  });
-
-  // Refresh cookie (scoped path, absolute expiry)
-  res.cookie(_refreshName, refreshToken, {
-    httpOnly: true,
-    secure: _secure,
-    sameSite: _sameSite,
-    domain: _domain,
-    path: `${apiURL}/auth/refresh`,
-    expires: refreshExpiresAt,
-  });
+}): void {
+  const service = createCookieService(validateServerEnv(process.env));
+  service.issueAuthCookies(input);
 }
 
-export type ClearCookiesInput = {
+/**
+ * @deprecated Use CookieService class instead. This function will be removed in a future version.
+ */
+export function clearAuthCookies(input: {
   res: Response;
   cookieDomain?: string;
   accessName?: string;
   refreshName?: string;
-};
-
-export function clearAuthCookies({
-  res,
-  cookieDomain,
-  accessName,
-  refreshName,
-}: ClearCookiesInput): void {
-  const defs = getDefaults();
-  const _domain = cookieDomain ?? defs.domain;
-  const _accessName = accessName ?? defs.accessName;
-  const _refreshName = refreshName ?? defs.refreshName;
-
-  const base = {
-    httpOnly: true,
-    secure: true, // keep secure on clears
-    domain: _domain,
-  } as const;
-
-  res.clearCookie(_accessName, { ...base, path: '/' });
-  res.clearCookie(_refreshName, { ...base, path: '/auth/refresh' });
+}): void {
+  const service = createCookieService(validateServerEnv(process.env));
+  service.clearAuthCookies(input);
 }

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import * as todolistController from '../controllers/todolistController';
+import { TodolistController } from '../controllers/todolistController';
 
 import { requireAuthWithUser } from '../middlewares/auth';
 import {
@@ -8,8 +8,13 @@ import {
   updateTodolistBody,
 } from '../schemas/todolistSchemas';
 import { validate } from '../middlewares/validate';
+import { validateServerEnv } from '../config/env';
 
 const router: Router = Router();
+
+const todolistController = new TodolistController(
+  validateServerEnv(process.env)
+);
 
 router.get('/', requireAuthWithUser, todolistController.getMyTodolists);
 

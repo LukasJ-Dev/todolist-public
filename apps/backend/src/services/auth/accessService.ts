@@ -6,7 +6,12 @@ import jwt, {
 import { randomUUID } from 'crypto';
 import { AppError } from '../../utils/appError';
 import { validateServerEnv } from '../../config/env';
-import { AUTH_CONSTANTS, clampTtl, validateSecret, validateKey } from '../../utils/auth';
+import {
+  AUTH_CONSTANTS,
+  clampTtl,
+  validateSecret,
+  validateKey,
+} from '../../utils/auth';
 import type {
   CreateAccessTokenInput,
   CreateAccessTokenOutput,
@@ -61,7 +66,7 @@ export class AccessTokenService {
 
     // Get the actual iat from the decoded token
     const decoded = jwt.decode(token) as Record<string, unknown> | null;
-    const actualIat = (typeof decoded?.iat === 'number' ? decoded.iat : iat);
+    const actualIat = typeof decoded?.iat === 'number' ? decoded.iat : iat;
 
     return { token, exp, iat: actualIat, jti };
   }
@@ -146,7 +151,11 @@ export class AccessTokenService {
 
     // RS256
     const pk = validateKey(this.env.JWT_PRIVATE_KEY, 'JWT_PRIVATE_KEY');
-    this.cachedSigningMaterial = { alg: 'RS256' as const, key: pk, kid } as unknown as SigningMaterial;
+    this.cachedSigningMaterial = {
+      alg: 'RS256' as const,
+      key: pk,
+      kid,
+    } as unknown as SigningMaterial;
     return this.cachedSigningMaterial;
   }
 
@@ -166,7 +175,10 @@ export class AccessTokenService {
 
     // RS256: verify with public key
     const pub = validateKey(this.env.JWT_PUBLIC_KEY, 'JWT_PUBLIC_KEY');
-    this.cachedVerificationMaterial = { alg: 'RS256' as const, key: pub } as unknown as VerificationMaterial;
+    this.cachedVerificationMaterial = {
+      alg: 'RS256' as const,
+      key: pub,
+    } as unknown as VerificationMaterial;
     return this.cachedVerificationMaterial;
   }
 
@@ -175,31 +187,3 @@ export class AccessTokenService {
     return clampTtl(ttlMs);
   }
 }
-
-// ============================================================================
-// PUBLIC API - STANDALONE FUNCTIONS
-// ============================================================================
-
-// Environment setup
-const env = validateServerEnv(process.env);
-
-// Default service instance
-const defaultService = new AccessTokenService(env);
-
-// Standalone functions for backward compatibility
-export function createAccessToken(
-  input: CreateAccessTokenInput
-): CreateAccessTokenOutput {
-  return defaultService.createAccessToken(input);
-}
-
-export function verifyAccessToken(
-  token: string,
-  options?: VerifyAccessTokenOptions
-): VerifiedAccessToken {
-  return defaultService.verifyAccessToken(token, options);
-}
-
-// Export the service class and default instance
-export { defaultService as accessTokenService };
-export default defaultService;

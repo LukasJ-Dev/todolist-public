@@ -48,8 +48,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ ./packages/
 COPY apps/backend/package.json ./apps/backend/
 
-# Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod
+# Install only production dependencies (skip prepare script to avoid husky issues)
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # Copy built packages from build stage
 COPY --from=backend-build --chown=nodejs:nodejs /app/packages/config/dist ./packages/config/dist
@@ -71,4 +71,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
 # Start the application
-CMD ["node", "apps/backend/dist/server.js"]
+CMD ["node", "apps/backend/dist/apps/backend/src/server.js"]

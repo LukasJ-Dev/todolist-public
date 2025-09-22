@@ -1,5 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { validateServerEnv } from './env';
+import { swaggerPaths } from '../docs/swagger';
 
 const env = validateServerEnv(process.env);
 
@@ -32,6 +33,7 @@ const options: swaggerJsdoc.Options = {
             : 'Development server',
       },
     ],
+    paths: swaggerPaths,
     components: {
       securitySchemes: {
         cookieAuth: {
@@ -492,7 +494,7 @@ const options: swaggerJsdoc.Options = {
       },
     ],
   },
-  apis: ['./src/controllers/*.ts', './src/routes/*.ts', './src/app.ts'],
+  apis: ['./src/docs/swagger/*.ts'], // Only scan our clean documentation files
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

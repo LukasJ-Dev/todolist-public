@@ -40,23 +40,27 @@ export interface VerifiedAccessToken {
 
 export type Alg = Extract<Algorithm, 'HS256' | 'RS256'>;
 
-export interface SigningMaterial {
-  alg: 'HS256';
-  key: Buffer;
-  kid?: string;
-} | {
-  alg: 'RS256';
-  key: string;
-  kid?: string;
-}
+export type SigningMaterial =
+  | {
+      alg: 'HS256';
+      key: Buffer;
+      kid?: string;
+    }
+  | {
+      alg: 'RS256';
+      key: string;
+      kid?: string;
+    };
 
-export interface VerificationMaterial {
-  alg: 'HS256';
-  key: Buffer;
-} | {
-  alg: 'RS256';
-  key: string;
-}
+export type VerificationMaterial =
+  | {
+      alg: 'HS256';
+      key: Buffer;
+    }
+  | {
+      alg: 'RS256';
+      key: string;
+    };
 
 // ============================================================================
 // REFRESH TOKEN TYPES

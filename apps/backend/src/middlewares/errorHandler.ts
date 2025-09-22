@@ -36,9 +36,20 @@ export function errorHandler(
   if (status === 500)
     errorResponse = new AppError('Internal Server Error', 500);
 
+  // Ensure error message is properly serialized
+  const serializedError =
+    process.env.NODE_ENV === 'production'
+      ? errorResponse
+      : {
+          message: error.message,
+          statusCode: error.statusCode,
+          isOperational: error.isOperational,
+          ...(error.details && { details: error.details }),
+        };
+
   res.status(status).json({
     status: status,
-    error: process.env.NODE_ENV === 'production' ? errorResponse : error,
+    error: serializedError,
     success: false,
     stack: process.env.NODE_ENV === 'production' ? null : error.stack,
   });

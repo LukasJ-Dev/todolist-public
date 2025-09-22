@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import * as taskController from '../controllers/taskController';
 
 import { requireAuthWithUser } from '../middlewares/auth';
 import {
@@ -8,8 +7,12 @@ import {
   updateTaskBody,
 } from '../schemas/taskSchemas';
 import { validate } from '../middlewares/validate';
+import { TaskController } from '../controllers/taskController';
+import { validateServerEnv } from '../config/env';
 
 const router: Router = Router();
+
+const taskController = new TaskController(validateServerEnv(process.env));
 
 router.get('/', requireAuthWithUser, taskController.getMyTasks);
 

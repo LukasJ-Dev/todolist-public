@@ -1,579 +1,249 @@
 import { Request, Response } from 'express';
+import { BaseController } from './BaseController';
 import { userModel } from '../models/userModel';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import {
-  createRefreshToken,
-  revokeRefreshToken,
-  rotateRefreshToken,
-  listUserSessions,
+  createRefreshTokenService,
+  RefreshTokenService,
 } from '../services/auth/refreshService';
-import response from '../utils/response';
-import {
-  clearAuthCookies,
-  issueAuthCookies,
-  parseRefreshFromRequest,
-} from '../services/auth/cookieService';
-import { createAccessToken } from '../services/auth/accessService';
+import { AccessTokenService } from '../services/auth/accessService';
 import { createHmac } from 'crypto';
 import { refreshTokenModel } from '../models/refreshTokens';
-import { validateServerEnv } from '../config/env';
-
-const env = validateServerEnv(process.env);
-
-/**
- * @swagger
- * /api/v1/auth/signup:
- *   post:
- *     summary: Register a new user
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/SignupRequest'
- *           examples:
- *             example1:
- *               summary: New user registration
- *               value:
- *                 name: "User Name"
- *                 email: "user@example.com"
- *                 password: "SecurePassword123!"
- *     responses:
- *       201:
- *         description: User created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UserResponse'
- *             examples:
- *               success:
- *                 summary: Successful registration
- *                 value:
- *                   success: true
- *                   user:
- *                     id: "507f1f77bcf86cd799439011"
- *                     name: "User Name"
- *                     email: "user@example.com"
- *       400:
- *         description: Invalid input data
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       409:
- *         description: User already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many registration attempts
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-export const signup = catchAsync(async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
-
-  // Log user registration attempt
-  req.log.info(
-    {
-      email,
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-    },
-    'User registration attempt'
-  );
-
-  const user = await userModel.create({ name, email, password });
-
-  const { token: refreshToken, expiresAt } = await createRefreshToken({
-    userId: user._id,
-    ipAddress: req.ip,
-    userAgent: req.get('user-agent') || undefined,
-  });
-
-  const ACCESS_TTL_MS =
-    env.ACCESS_TOKEN_TTL_MS > 0 ? env.ACCESS_TOKEN_TTL_MS : 15 * 60 * 1000; // 15m default
-
-  const { token: accessToken } = createAccessToken({
-    userId: user._id.toString(),
-    ttlMs: ACCESS_TTL_MS,
-  });
-
-  // Set HttpOnly, Secure cookies
-  issueAuthCookies({
-    res,
-    accessToken,
-    accessTtlMs: ACCESS_TTL_MS,
-    refreshToken,
-    refreshExpiresAt: expiresAt,
-  });
-
-  // Log successful user registration
-  req.log.info(
-    {
-      userId: user._id.toString(),
-      email: user.email,
-      ip: req.ip,
-    },
-    'User registered successfully'
-  );
-
-  // Respond with public user only
-  const publicUser = {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-  };
-  return response.created(res, { user: publicUser });
-});
+import { ServerEnv } from '../config/env';
+import {
+  CookieService,
+  createCookieService,
+} from '../services/auth/cookieService';
 
 /**
- * @swagger
- * /api/v1/auth/login:
- *   post:
- *     summary: Authenticate user and create session
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/LoginRequest'
- *           examples:
- *             example1:
- *               summary: User login
- *               value:
- *                 email: "user@example.com"
- *                 password: "SecurePassword123!"
- *     responses:
- *       200:
- *         description: Login successful
- *         headers:
- *           Set-Cookie:
- *             description: HttpOnly cookies containing access and refresh tokens
- *             schema:
- *               type: string
- *               example: "accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UserResponse'
- *             examples:
- *               success:
- *                 summary: Successful login
- *                 value:
- *                   success: true
- *                   user:
- *                     id: "507f1f77bcf86cd799439011"
- *                     name: "User Name"
- *                     email: "user@example.com"
- *       401:
- *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many login attempts
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ * Auth controller with environment dependency injection and clean service management
  */
-export const login = catchAsync(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+export class AuthController extends BaseController {
+  private readonly refreshTokenService: RefreshTokenService;
+  private readonly accessTokenService: AccessTokenService;
+  private readonly cookieService: CookieService;
 
-  // Log login attempt
-  req.log.info(
-    {
-      email,
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-    },
-    'Login attempt'
-  );
+  constructor(env: ServerEnv) {
+    super(env);
 
-  const user = await userModel.validateCredentials(email, password);
-
-  if (!user) {
-    // Log failed login
-    req.log.warn(
-      {
-        email,
-        ip: req.ip,
-      },
-      'Login failed - invalid credentials'
-    );
-    throw new AppError('Invalid credentials', 401);
+    // Create service instances with environment dependency injection
+    this.refreshTokenService = createRefreshTokenService(this.env);
+    this.cookieService = createCookieService(this.env);
+    this.accessTokenService = new AccessTokenService(this.env);
   }
 
-  const { token: refreshToken, expiresAt } = await createRefreshToken({
-    userId: user._id,
-    ipAddress: req.ip,
-    userAgent: req.get('user-agent') || undefined,
-  });
-
-  const ACCESS_TTL_MS =
-    env.ACCESS_TOKEN_TTL_MS > 0 ? env.ACCESS_TOKEN_TTL_MS : 15 * 60 * 1000; // 15m default
-
-  const { token: accessToken } = createAccessToken({
-    userId: user._id.toString(),
-    ttlMs: ACCESS_TTL_MS,
-  });
-
-  // Set HttpOnly, Secure cookies
-  issueAuthCookies({
-    res,
-    accessToken,
-    accessTtlMs: ACCESS_TTL_MS,
-    refreshToken,
-    refreshExpiresAt: expiresAt,
-  });
-
-  // Log successful login
-  req.log.info(
-    {
-      userId: user._id.toString(),
-      email: user.email,
-      ip: req.ip,
-    },
-    'Login successful'
-  );
-
-  // Respond with public user only (no tokens in body)
-  const publicUser = {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-  };
-  return response.ok(res, { user: publicUser });
-});
-
-/**
- * @swagger
- * /api/v1/auth/refresh:
- *   post:
- *     summary: Refresh access token using refresh token
- *     tags: [Authentication]
- *     security:
- *       - refreshToken: []
- *     responses:
- *       204:
- *         description: Token refreshed successfully
- *         headers:
- *           Set-Cookie:
- *             description: New HttpOnly cookies containing refreshed tokens
- *             schema:
- *               type: string
- *               example: "accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
- *       401:
- *         description: Invalid or expired refresh token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many refresh attempts
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-export const refresh = catchAsync(async (req: Request, res: Response) => {
-  const raw = parseRefreshFromRequest(req);
-  if (!raw) {
-    req.log.warn(
-      {
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-      },
-      'Token refresh failed - no refresh token'
-    );
-    throw new AppError('Unauthorized', 401);
-  }
-
-  // Log token refresh attempt
-  req.log.info(
-    {
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-    },
-    'Token refresh attempt'
-  );
-
-  const ACCESS_TTL_MS =
-    env.ACCESS_TOKEN_TTL_MS > 0 ? env.ACCESS_TOKEN_TTL_MS : 15 * 60 * 1000; // 15m default
-
-  try {
-    // Rotate refresh token (reuse detection handled inside)
-    const {
-      token: newRefresh,
-      userId,
-      expiresAt,
-    } = await rotateRefreshToken({
-      token: raw,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent') || undefined,
+  /**
+   * Register a new user
+   */
+  signup = catchAsync(async (req: Request, res: Response) => {
+    this.logOperation(req, 'User registration attempt', {
+      email: req.body.email,
     });
 
-    // Mint a fresh access token
-    const { token: accessToken } = createAccessToken({
-      userId: userId.toString(),
-      ttlMs: ACCESS_TTL_MS,
+    // Check if user already exists
+    const existingUser = await userModel.findOne({ email: req.body.email });
+    if (existingUser) {
+      throw new AppError('User already exists', 409);
+    }
+
+    // Create new user
+    const newUser = await userModel.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
     });
 
-    // Set cookies (httpOnly, Secure)
-    issueAuthCookies({
+    // Create refresh token
+    const { token: refreshToken, expiresAt } =
+      await this.refreshTokenService.createRefreshToken({
+        userId: newUser._id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent') || undefined,
+      });
+
+    // Create access token
+    const { token: accessToken } =
+      await this.accessTokenService.createAccessToken({
+        userId: newUser._id.toString(),
+      });
+
+    // Issue auth cookies
+    this.cookieService.issueAuthCookies({
       res,
       accessToken,
-      accessTtlMs: ACCESS_TTL_MS,
-      refreshToken: newRefresh,
+      accessTtlMs: this.getEnvValue('ACCESS_TOKEN_TTL_MS') || 15 * 60 * 1000,
+      refreshToken,
       refreshExpiresAt: expiresAt,
     });
 
-    // Log successful token refresh
-    req.log.info(
-      {
-        userId,
-        ip: req.ip,
+    this.logOperation(req, 'User registered successfully', {
+      userId: newUser._id,
+    });
+
+    this.sendCreated(res, {
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
       },
-      'Token refresh successful'
-    );
-
-    response.noContent(res, {});
-  } catch (err: any) {
-    // Log token refresh failure
-    req.log.warn(
-      {
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-        error: err.message,
-      },
-      'Token refresh failed'
-    );
-    // On invalid/reused refresh, clear cookies so the client can re-auth cleanly
-    if (err?.statusCode === 401) {
-      clearAuthCookies({ res });
-    }
-    throw err;
-  }
-});
-
-/**
- * @swagger
- * /api/v1/auth/logout:
- *   post:
- *     summary: Logout user and invalidate session
- *     tags: [Authentication]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       204:
- *         description: Logout successful
- *         headers:
- *           Set-Cookie:
- *             description: Cleared HttpOnly cookies
- *             schema:
- *               type: string
- *               example: "accessToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0"
- *       401:
- *         description: User not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-export const logout = catchAsync(async (req: Request, res: Response) => {
-  // Log logout attempt
-  req.log.info(
-    {
-      userId: req.user?.id,
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-    },
-    'User logout attempt'
-  );
-
-  // Try to revoke the current device's session (family) using the refresh cookie.
-  const raw = parseRefreshFromRequest(req);
-
-  if (raw) {
-    const secret = env.REFRESH_HASH_SECRET;
-    if (secret) {
-      const tokenHash = createHmac('sha256', secret).update(raw).digest('hex');
-      const doc = await refreshTokenModel
-        .findOne({ tokenHash })
-        .select('familyId')
-        .lean();
-
-      if (doc?.familyId) {
-        // Revoke this device/session only
-        await revokeRefreshToken({ familyId: doc.familyId });
-      }
-    }
-    // If secret missing or token not found, we still clear cookies below (idempotent logout)
-  }
-
-  // Always clear cookies so the client is logged out locally.
-  clearAuthCookies({ res });
-
-  // Log successful logout
-  req.log.info(
-    {
-      userId: req.user?.id,
-      ip: req.ip,
-    },
-    'User logged out successfully'
-  );
-
-  return response.noContent(res, {});
-});
-
-/**
- * @swagger
- * /api/v1/auth/me:
- *   get:
- *     summary: Get current user information
- *     tags: [Authentication]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: User information retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UserResponse'
- *             examples:
- *               success:
- *                 summary: Current user info
- *                 value:
- *                   success: true
- *                   user:
- *                     id: "507f1f77bcf86cd799439011"
- *                     name: "User Name"
- *                     email: "user@example.com"
- *       401:
- *         description: User not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-export const me = catchAsync(async (req: Request, res: Response) => {
-  if (!req.auth) throw new AppError('Unauthorized', 401);
-
-  const doc = await userModel
-    .findById(req.auth.userId)
-    .select('name email')
-    .lean();
-  if (!doc) throw new AppError('Unauthorized', 401);
-
-  return response.ok(res, {
-    user: { id: String(doc._id), name: doc.name, email: doc.email },
-  });
-});
-
-/**
- * @swagger
- * /api/v1/auth/sessions:
- *   get:
- *     summary: Get all active sessions for the current user
- *     tags: [Authentication]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: includeRevoked
- *         schema:
- *           type: boolean
- *           default: false
- *         description: Whether to include revoked/expired sessions
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 20
- *         description: Maximum number of sessions to return
- *     responses:
- *       200:
- *         description: Sessions retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 sessions:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       familyId:
- *                         type: string
- *                         description: Unique session family ID
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                         description: When the session was first created
- *                       lastUsedAt:
- *                         type: string
- *                         format: date-time
- *                         description: Last time the session was used
- *                       ipAddress:
- *                         type: string
- *                         description: IP address of the session
- *                       userAgent:
- *                         type: string
- *                         description: Browser/device information
- *                       active:
- *                         type: boolean
- *                         description: Whether the session is currently active
- *                       tokenCount:
- *                         type: integer
- *                         description: Number of tokens in this session family
- *             examples:
- *               success:
- *                 summary: Active sessions
- *                 value:
- *                   success: true
- *                   sessions:
- *                     - familyId: "507f1f77bcf86cd799439011"
- *                       createdAt: "2024-01-15T10:30:00.000Z"
- *                       lastUsedAt: "2024-01-15T14:22:00.000Z"
- *                       ipAddress: "192.168.1.100"
- *                       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
- *                       active: true
- *                       tokenCount: 1
- *       401:
- *         description: User not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-export const getSessions = catchAsync(async (req: Request, res: Response) => {
-  if (!req.auth) throw new AppError('Unauthorized', 401);
-
-  const { includeRevoked = false, limit = 20 } = req.query;
-
-  // Parse and validate parameters
-  const includeRevokedBool = includeRevoked === 'true';
-  const limitNum = Math.min(Math.max(parseInt(String(limit)) || 20, 1), 100);
-
-  const sessions = await listUserSessions(req.auth.userId, {
-    includeRevoked: includeRevokedBool,
-    limit: limitNum,
+    });
   });
 
-  return response.ok(res, { sessions });
-});
+  /**
+   * Login user
+   */
+  login = catchAsync(async (req: Request, res: Response) => {
+    this.logOperation(req, 'User login attempt', {
+      email: req.body.email,
+    });
+
+    // Find user and validate password
+    const user = await userModel
+      .findOne({ email: req.body.email })
+      .select('+password');
+
+    if (!user || !(await user.checkPassword(req.body.password))) {
+      throw new AppError('Invalid credentials', 401);
+    }
+
+    // Create refresh token
+    const { token: refreshToken, expiresAt } =
+      await this.refreshTokenService.createRefreshToken({
+        userId: user._id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent') || undefined,
+      });
+
+    // Create access token
+    const { token: accessToken } =
+      await this.accessTokenService.createAccessToken({
+        userId: user._id.toString(),
+      });
+
+    // Issue auth cookies
+    this.cookieService.issueAuthCookies({
+      res,
+      accessToken,
+      accessTtlMs: this.getEnvValue('ACCESS_TOKEN_TTL_MS') || 15 * 60 * 1000,
+      refreshToken,
+      refreshExpiresAt: expiresAt,
+    });
+
+    this.logOperation(req, 'User logged in successfully', {
+      userId: user._id,
+    });
+
+    this.sendSuccess(res, {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  });
+
+  /**
+   * Refresh access token
+   */
+  refresh = catchAsync(async (req: Request, res: Response) => {
+    const refreshToken = this.cookieService.parseRefreshFromRequest(req);
+
+    if (!refreshToken) {
+      throw new AppError('Refresh token not provided', 401);
+    }
+
+    // Verify refresh token
+    const hashedToken = createHmac(
+      'sha256',
+      this.getEnvValue('REFRESH_HASH_SECRET')
+    )
+      .update(refreshToken)
+      .digest('hex');
+
+    const storedToken = await refreshTokenModel.findOne({
+      tokenHash: hashedToken,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!storedToken) {
+      throw new AppError('Invalid or expired refresh token', 401);
+    }
+
+    // Rotate refresh token
+    const { token: newRefreshToken, expiresAt } =
+      await this.refreshTokenService.rotateRefreshToken({
+        token: refreshToken,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent') || undefined,
+      });
+
+    // Create new access token
+    const { token: accessToken } =
+      await this.accessTokenService.createAccessToken({
+        userId: storedToken.userId.toString(),
+      });
+
+    // Issue new auth cookies
+    this.cookieService.issueAuthCookies({
+      res,
+      accessToken,
+      accessTtlMs: this.getEnvValue('ACCESS_TOKEN_TTL_MS') || 15 * 60 * 1000,
+      refreshToken: newRefreshToken,
+      refreshExpiresAt: expiresAt,
+    });
+
+    this.logOperation(req, 'Token refreshed successfully', {
+      userId: storedToken.userId,
+    });
+
+    this.sendNoContent(res, { message: 'Token refreshed successfully' });
+  });
+
+  /**
+   * Logout user
+   */
+  logout = catchAsync(async (req: Request, res: Response) => {
+    const userId = this.validateUser(req);
+
+    this.logOperation(req, 'User logout', { userId });
+
+    // Revoke all refresh tokens for this user
+    await this.refreshTokenService.revokeRefreshToken({ userId });
+
+    // Clear auth cookies
+    this.cookieService.clearAuthCookies({ res });
+
+    this.logOperation(req, 'User logged out successfully', { userId });
+
+    this.sendNoContent(res, { message: 'Logged out successfully' });
+  });
+
+  /**
+   * Get current user info
+   */
+  getMe = catchAsync(async (req: Request, res: Response) => {
+    const userId = this.validateUser(req);
+
+    const user = await userModel.findById(userId);
+
+    this.sendSuccess(res, {
+      user: {
+        _id: user?._id,
+        name: user?.name,
+        email: user?.email,
+      },
+    });
+  });
+
+  /**
+   * Get user sessions
+   */
+  getSessions = catchAsync(async (req: Request, res: Response) => {
+    const userId = this.validateUser(req);
+
+    const sessions = await this.refreshTokenService.listUserSessions(userId);
+
+    this.sendSuccess(res, { sessions });
+  });
+}
