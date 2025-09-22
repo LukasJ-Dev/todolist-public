@@ -14,8 +14,8 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE: mongodb://localhost:27017/test
-      JWT_SECRET: test-jwt-secret-key-for-ci
-      REFRESH_HASH_SECRET: test-refresh-hash-secret-for-ci
+      JWT_SECRET: test-jwt-secret-key-for-ci-that-is-long-enough-32-chars
+      REFRESH_HASH_SECRET: test-refresh-hash-secret-for-ci-that-is-long-enough-32-chars
 
     steps:
       - name: Checkout code
