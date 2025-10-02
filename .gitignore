@@ -92,3 +92,15 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# AWS and Terraform
+.aws/
+terraform/aws/.terraform/
+terraform/aws/.terraform.lock.hcl
+terraform/aws/terraform.tfstate*
+terraform/aws/terraform.tfvars
+
+# Kubernetes secrets (contains sensitive data)
+k8s/secret.yaml
+k8s-processed/
+.k8s-temp-dir

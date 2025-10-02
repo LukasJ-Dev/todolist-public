@@ -1,3 +1,3 @@
-# LJ Todolist App
+# Todolist Fullstack App
 
-This is a todolist app which lets you create todolists and tasks in the cloud. The app uses Typescript in both the backend and frontend. The MERN (MongoDB, Express, React, Node) stack is used.
+A modern, fullstack todolist application built with React and Node.js. Users can create accounts, manage their personal todo lists, and access their tasks from anywhere with a clean, responsive interface.

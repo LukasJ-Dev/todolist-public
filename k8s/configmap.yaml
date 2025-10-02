@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todolist-config
+  namespace: todolist
+  labels:
+    app: todolist
+    component: config
+data:
+  NODE_ENV: 'production'
+  PORT: '3000'
+  LOG_LEVEL: 'info'
+  HOST: '0.0.0.0'
