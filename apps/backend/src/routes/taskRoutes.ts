@@ -5,6 +5,7 @@ import {
   createTaskBody,
   deleteTaskParams,
   updateTaskBody,
+  getTaskQuery,
 } from '../schemas/taskSchemas';
 import { validate } from '../middlewares/validate';
 import { TaskController } from '../controllers/taskController';
@@ -14,7 +15,12 @@ const router: Router = Router();
 
 const taskController = new TaskController(validateServerEnv(process.env));
 
-router.get('/', requireAuthWithUser, taskController.getMyTasks);
+router.get(
+  '/',
+  requireAuthWithUser,
+  validate({ query: getTaskQuery }),
+  taskController.getMyTasks
+);
 
 router.post(
   '/',

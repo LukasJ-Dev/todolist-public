@@ -17,7 +17,7 @@ import NewTodolistDialog from '../../todolists/dialogs/NewTodolistDialog';
 import { Skeleton } from '../../../components/UI/skeleton';
 import { Button } from '../../../components/UI/button';
 
-import { Inbox, Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { Inbox, Search, Calendar, AlertCircle, RefreshCw } from 'lucide-react';
 import { selectSelectedItem } from '../../ui/uiSelector';
 import { setSelectedItem } from '../../ui/uiSlice';
 import { FaPlus } from 'react-icons/fa';
@@ -32,6 +32,10 @@ const items = [
   {
     title: 'Search',
     icon: Search,
+  },
+  {
+    title: 'Upcoming',
+    icon: Calendar,
   },
 ];
 
@@ -52,7 +56,7 @@ function TodolistHandler() {
   };
 
   return (
-    <Sidebar>
+    <Sidebar className="neu-sidebar">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Application</SidebarGroupLabel>

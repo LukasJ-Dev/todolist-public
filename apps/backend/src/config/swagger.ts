@@ -110,6 +110,82 @@ const options: swaggerJsdoc.Options = {
               description: 'Task completion status',
               example: false,
             },
+            dueDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Task due date',
+              example: '2024-01-20T18:00:00.000Z',
+            },
+            startDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Task start date',
+              example: '2024-01-18T09:00:00.000Z',
+            },
+            completedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Task completion timestamp',
+              example: '2024-01-19T15:30:00.000Z',
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high'],
+              description: 'Task priority level',
+              example: 'medium',
+            },
+            isRecurring: {
+              type: 'boolean',
+              description: 'Whether the task is recurring',
+              example: false,
+            },
+            recurrenceType: {
+              type: 'string',
+              enum: ['daily', 'weekly', 'monthly', 'yearly'],
+              description: 'Recurrence pattern type',
+              example: 'weekly',
+            },
+            recurrenceInterval: {
+              type: 'integer',
+              description:
+                'Recurrence interval (every N days/weeks/months/years)',
+              example: 1,
+              minimum: 1,
+            },
+            parentTaskId: {
+              type: 'string',
+              description: 'Parent task ID for subtasks',
+              example: '507f1f77bcf86cd799439013',
+            },
+            nextDueDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Next due date for recurring tasks',
+              example: '2024-01-29T10:00:00.000Z',
+            },
+            tags: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 50,
+              },
+              description: 'Task tags for categorization',
+              example: ['work', 'urgent', 'project'],
+              maxItems: 10,
+            },
+            subtasks: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'Subtask IDs',
+              example: ['507f1f77bcf86cd799439014', '507f1f77bcf86cd799439015'],
+            },
+            parentTask: {
+              type: 'string',
+              description: 'Parent task ID',
+              example: '507f1f77bcf86cd799439013',
+            },
             todolist: {
               type: 'object',
               properties: {
@@ -243,6 +319,57 @@ const options: swaggerJsdoc.Options = {
               description: 'Todolist ID',
               example: '507f1f77bcf86cd799439012',
             },
+            dueDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Task due date',
+              example: '2024-01-20T18:00:00.000Z',
+            },
+            startDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Task start date',
+              example: '2024-01-18T09:00:00.000Z',
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high'],
+              description: 'Task priority level',
+              example: 'medium',
+            },
+            isRecurring: {
+              type: 'boolean',
+              description: 'Whether the task is recurring',
+              example: false,
+            },
+            recurrenceType: {
+              type: 'string',
+              enum: ['daily', 'weekly', 'monthly', 'yearly'],
+              description: 'Recurrence pattern type',
+              example: 'weekly',
+            },
+            recurrenceInterval: {
+              type: 'integer',
+              description:
+                'Recurrence interval (every N days/weeks/months/years)',
+              example: 1,
+              minimum: 1,
+            },
+            tags: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 50,
+              },
+              description: 'Task tags for categorization',
+              example: ['work', 'urgent', 'project'],
+              maxItems: 10,
+            },
+            parentTask: {
+              type: 'string',
+              description: 'Parent task ID for subtasks',
+              example: '507f1f77bcf86cd799439013',
+            },
           },
           required: ['name', 'todolist'],
         },
@@ -268,10 +395,54 @@ const options: swaggerJsdoc.Options = {
               description: 'Task completion status',
               example: true,
             },
-            todolist: {
+            dueDate: {
               type: 'string',
-              description: 'Todolist ID',
-              example: '507f1f77bcf86cd799439012',
+              format: 'date-time',
+              description: 'Task due date (null to remove)',
+              example: '2024-01-20T18:00:00.000Z',
+              nullable: true,
+            },
+            startDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Task start date (null to remove)',
+              example: '2024-01-18T09:00:00.000Z',
+              nullable: true,
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high'],
+              description: 'Task priority level',
+              example: 'high',
+            },
+            isRecurring: {
+              type: 'boolean',
+              description: 'Whether the task is recurring',
+              example: true,
+            },
+            recurrenceType: {
+              type: 'string',
+              enum: ['daily', 'weekly', 'monthly', 'yearly'],
+              description: 'Recurrence pattern type (null to remove)',
+              example: 'weekly',
+              nullable: true,
+            },
+            recurrenceInterval: {
+              type: 'integer',
+              description:
+                'Recurrence interval (every N days/weeks/months/years)',
+              example: 2,
+              minimum: 1,
+            },
+            tags: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 50,
+              },
+              description: 'Task tags for categorization',
+              example: ['work', 'urgent', 'project', 'deadline'],
+              maxItems: 10,
             },
           },
         },

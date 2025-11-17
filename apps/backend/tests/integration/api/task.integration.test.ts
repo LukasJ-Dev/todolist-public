@@ -109,6 +109,207 @@ describe('Task API Integration', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toBe('User not authenticated');
     });
+
+    it('should filter tasks by due date', async () => {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+
+      // Create tasks with different due dates
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Task Due Today',
+        todolist: todolistId,
+        dueDate: today.toISOString(),
+      });
+
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Task Due Tomorrow',
+        todolist: todolistId,
+        dueDate: tomorrow.toISOString(),
+      });
+
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Task Due Next Week',
+        todolist: todolistId,
+        dueDate: nextWeek.toISOString(),
+      });
+
+      // Test due today filter
+      const todayResponse = await api
+        .get('/api/v1/tasks?filter=due_today')
+        .set('Cookie', userCookies);
+
+      expect(todayResponse.status).toBe(200);
+      expect(todayResponse.body.data.tasks.length).toBe(1);
+      expect(todayResponse.body.data.tasks[0].name).toBe('Task Due Today');
+
+      // Test due this week filter
+      const weekResponse = await api
+        .get('/api/v1/tasks?filter=due_this_week')
+        .set('Cookie', userCookies);
+
+      expect(weekResponse.status).toBe(200);
+      expect(weekResponse.body.data.tasks.length).toBe(2);
+    });
+
+    it('should filter tasks by priority', async () => {
+      // Create tasks with different priorities
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'High Priority Task',
+        todolist: todolistId,
+        priority: 'high',
+      });
+
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Low Priority Task',
+        todolist: todolistId,
+        priority: 'low',
+      });
+
+      // Test priority filter
+      const highPriorityResponse = await api
+        .get('/api/v1/tasks?priority=high')
+        .set('Cookie', userCookies);
+
+      expect(highPriorityResponse.status).toBe(200);
+      expect(highPriorityResponse.body.data.tasks.length).toBe(1);
+      expect(highPriorityResponse.body.data.tasks[0].priority).toBe('high');
+    });
+
+    it('should filter tasks by tags', async () => {
+      // Create tasks with different tags
+      await api
+        .post('/api/v1/tasks')
+        .set('Cookie', userCookies)
+        .send({
+          name: 'Work Task',
+          todolist: todolistId,
+          tags: ['work', 'urgent'],
+        });
+
+      await api
+        .post('/api/v1/tasks')
+        .set('Cookie', userCookies)
+        .send({
+          name: 'Personal Task',
+          todolist: todolistId,
+          tags: ['personal', 'home'],
+        });
+
+      // Test tag filter
+      const workTasksResponse = await api
+        .get('/api/v1/tasks?tags=work')
+        .set('Cookie', userCookies);
+
+      expect(workTasksResponse.status).toBe(200);
+      expect(workTasksResponse.body.data.tasks.length).toBe(1);
+      expect(workTasksResponse.body.data.tasks[0].tags).toContain('work');
+    });
+
+    it('should include populated subtasks when include=subtasks parameter is provided', async () => {
+      // Create a parent task
+      const parentTaskResponse = await api
+        .post('/api/v1/tasks')
+        .set('Cookie', userCookies)
+        .send({
+          name: 'Parent Task',
+          todolist: todolistId,
+          description: 'This is a parent task',
+        });
+
+      const parentTaskId = parentTaskResponse.body.data.task.id;
+
+      // Create subtasks
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Subtask 1',
+        todolist: todolistId,
+        parentTask: parentTaskId,
+        description: 'First subtask',
+      });
+
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Subtask 2',
+        todolist: todolistId,
+        parentTask: parentTaskId,
+        description: 'Second subtask',
+      });
+
+      // Test without include parameter (subtasks should be IDs)
+      const normalResponse = await api
+        .get('/api/v1/tasks')
+        .set('Cookie', userCookies);
+
+      expect(normalResponse.status).toBe(200);
+      const parentTask = normalResponse.body.data.tasks.find(
+        (task: any) => task.id === parentTaskId
+      );
+      expect(parentTask).toBeDefined();
+      expect(parentTask.subtasks).toBeDefined();
+      expect(Array.isArray(parentTask.subtasks)).toBe(true);
+      expect(parentTask.subtasks.length).toBe(2);
+      // Should be IDs (strings)
+      expect(typeof parentTask.subtasks[0]).toBe('string');
+
+      // Test with include=subtasks parameter (subtasks should be populated objects)
+      const withSubtasksResponse = await api
+        .get('/api/v1/tasks?include=subtasks')
+        .set('Cookie', userCookies);
+
+      expect(withSubtasksResponse.status).toBe(200);
+      const parentTaskWithSubtasks = withSubtasksResponse.body.data.tasks.find(
+        (task: any) => task.id === parentTaskId
+      );
+      expect(parentTaskWithSubtasks).toBeDefined();
+      expect(parentTaskWithSubtasks.subtasks).toBeDefined();
+      expect(Array.isArray(parentTaskWithSubtasks.subtasks)).toBe(true);
+      expect(parentTaskWithSubtasks.subtasks.length).toBe(2);
+
+      // Should be populated objects
+      expect(typeof parentTaskWithSubtasks.subtasks[0]).toBe('object');
+      expect(parentTaskWithSubtasks.subtasks[0].name).toBeDefined();
+      expect(parentTaskWithSubtasks.subtasks[0].description).toBeDefined();
+      expect(parentTaskWithSubtasks.subtasks[0].id).toBeDefined();
+    });
+
+    it('should sort tasks by due date', async () => {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+
+      // Create tasks with different due dates
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Task Due Next Week',
+        todolist: todolistId,
+        dueDate: nextWeek.toISOString(),
+      });
+
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Task Due Today',
+        todolist: todolistId,
+        dueDate: today.toISOString(),
+      });
+
+      await api.post('/api/v1/tasks').set('Cookie', userCookies).send({
+        name: 'Task Due Tomorrow',
+        todolist: todolistId,
+        dueDate: tomorrow.toISOString(),
+      });
+
+      // Test sorting by due date
+      const sortedResponse = await api
+        .get('/api/v1/tasks?sort=due_date')
+        .set('Cookie', userCookies);
+
+      expect(sortedResponse.status).toBe(200);
+      expect(sortedResponse.body.data.tasks.length).toBe(3);
+      expect(sortedResponse.body.data.tasks[0].name).toBe('Task Due Today');
+      expect(sortedResponse.body.data.tasks[1].name).toBe('Task Due Tomorrow');
+      expect(sortedResponse.body.data.tasks[2].name).toBe('Task Due Next Week');
+    });
   });
 
   describe('POST /api/v1/tasks', () => {
@@ -205,6 +406,71 @@ describe('Task API Integration', () => {
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toBe('User not authenticated');
+    });
+
+    it('should create task with due date', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 7); // 7 days from now
+
+      const taskData = {
+        name: 'Task with Due Date',
+        todolist: todolistId,
+        description: 'Task with due date',
+        dueDate: futureDate.toISOString(),
+      };
+
+      const response = await api
+        .post('/api/v1/tasks')
+        .set('Cookie', userCookies)
+        .send(taskData);
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.task).toBeDefined();
+      expect(response.body.data.task.name).toBe(taskData.name);
+      expect(response.body.data.task.dueDate).toBeDefined();
+      expect(new Date(response.body.data.task.dueDate)).toEqual(futureDate);
+    });
+
+    it('should create task with all enhanced fields', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 7);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 1);
+
+      const taskData = {
+        name: 'Enhanced Task',
+        todolist: todolistId,
+        description: 'Task with all features',
+        dueDate: futureDate.toISOString(),
+        startDate: startDate.toISOString(),
+        priority: 'high',
+        isRecurring: true,
+        recurrenceType: 'weekly',
+        recurrenceInterval: 2,
+        tags: ['work', 'urgent', 'project'],
+      };
+
+      const response = await api
+        .post('/api/v1/tasks')
+        .set('Cookie', userCookies)
+        .send(taskData);
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.task).toBeDefined();
+      expect(response.body.data.task.name).toBe(taskData.name);
+      expect(response.body.data.task.dueDate).toBeDefined();
+      expect(response.body.data.task.startDate).toBeDefined();
+      expect(response.body.data.task.priority).toBe('high');
+      expect(response.body.data.task.isRecurring).toBe(true);
+      expect(response.body.data.task.recurrenceType).toBe('weekly');
+      expect(response.body.data.task.recurrenceInterval).toBe(2);
+      expect(response.body.data.task.tags).toEqual([
+        'work',
+        'urgent',
+        'project',
+      ]);
     });
   });
 

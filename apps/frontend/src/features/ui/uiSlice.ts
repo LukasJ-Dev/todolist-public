@@ -1,5 +1,5 @@
 import { createSlice, Slice } from '@reduxjs/toolkit';
-import { TaskType } from '../../types';
+import { TaskType } from '../tasks/types';
 
 export interface uiState {
   showMenu: boolean;

@@ -3,7 +3,9 @@ import { selectSelectedItem } from '../features/ui/uiSelector';
 import TodolistHandler from '../features/todolist/components/TodolistHandler';
 import { SidebarProvider, SidebarTrigger } from '../components/UI/sidebar';
 import TodolistView from '../features/todolists/components/TodolistView';
-import AllTasks from '../features/tasks/components/TaskList';
+import SearchView from '../features/tasks/components/task-display/SearchView';
+import InboxView from '../features/tasks/components/task-display/InboxView';
+import UpcomingView from '../features/tasks/components/task-display/UpcomingView';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useGetAllTodolistsQuery } from '../features/todolists/services/todolistApi';
 
@@ -13,7 +15,11 @@ export default function Dashboard() {
 
   // Get the current todolist name for mobile header
   const getCurrentTodolistName = () => {
-    if (selectedItem === 'Inbox' || selectedItem === 'Search') {
+    if (
+      selectedItem === 'Inbox' ||
+      selectedItem === 'Search' ||
+      selectedItem === 'Upcoming'
+    ) {
       return selectedItem;
     }
     const todolist = todolists?.find((t: any) => t.id === selectedItem);
@@ -37,9 +43,11 @@ export default function Dashboard() {
 
           <ErrorBoundary>
             {selectedItem === 'Inbox' ? (
-              <AllTasks />
+              <InboxView />
             ) : selectedItem === 'Search' ? (
-              <AllTasks />
+              <SearchView />
+            ) : selectedItem === 'Upcoming' ? (
+              <UpcomingView />
             ) : (
               <TodolistView todolistId={selectedItem} />
             )}

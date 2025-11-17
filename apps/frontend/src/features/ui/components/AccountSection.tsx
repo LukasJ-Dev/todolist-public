@@ -61,8 +61,7 @@ export default function AccountSection() {
   return (
     <>
       <DropdownMenu open={dropdownOpen} onOpenChange={handleDropdownOpenChange}>
-        <DropdownMenuTrigger>
-          {' '}
+        <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             className="w-full justify-start gap-2 p-2 h-auto text-left"

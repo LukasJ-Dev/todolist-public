@@ -86,6 +86,16 @@
   --sidebar-accent-foreground: oklch(0.2 0.02 240);
   --sidebar-border: oklch(0.9 0.01 240);
   --sidebar-ring: oklch(0.55 0.2 240);
+
+  /* Neumorphism color palette */
+  --neu-bg: #f0f0f0;
+  --neu-card: #f8f8f8;
+  --neu-shadow-light: #ffffff;
+  --neu-shadow-dark: #d1d9e6;
+  --neu-text: #2d3748;
+  --neu-text-muted: #718096;
+  --neu-accent: #667eea;
+  --neu-accent-light: #764ba2;
 }
 
 .dark {
@@ -128,5 +138,234 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: var(--neu-bg);
+  }
+}
+
+@layer utilities {
+  /* Neumorphism utility classes */
+  .neu-card {
+    background-color: var(--neu-card);
+    border-radius: 0.75rem;
+    box-shadow:
+      2px 2px 4px var(--neu-shadow-dark),
+      -1px -1px 2px var(--neu-shadow-light);
+    transition: all 0.2s ease;
+  }
+
+  .neu-card:hover {
+    box-shadow:
+      4px 4px 8px var(--neu-shadow-dark),
+      -2px -2px 4px var(--neu-shadow-light);
+    transform: translateY(-1px);
+  }
+
+  .neu-card:active {
+    box-shadow:
+      inset 1px 1px 2px var(--neu-shadow-dark),
+      inset -1px -1px 2px var(--neu-shadow-light);
+    transform: translateY(0);
+  }
+
+  .neu-button {
+    background-color: var(--neu-card);
+    border-radius: 0.5rem;
+    box-shadow:
+      2px 2px 4px var(--neu-shadow-dark),
+      -1px -1px 2px var(--neu-shadow-light);
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .neu-button:hover {
+    box-shadow:
+      3px 3px 6px var(--neu-shadow-dark),
+      -2px -2px 4px var(--neu-shadow-light);
+    transform: translateY(-0.5px);
+  }
+
+  .neu-button:active {
+    box-shadow:
+      inset 1px 1px 2px var(--neu-shadow-dark),
+      inset -1px -1px 2px var(--neu-shadow-light);
+    transform: translateY(0);
+  }
+
+  .neu-input {
+    background-color: var(--neu-card);
+    border-radius: 0.5rem;
+    box-shadow:
+      inset 2px 2px 4px var(--neu-shadow-dark),
+      inset -1px -1px 2px var(--neu-shadow-light);
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  .neu-input:focus {
+    box-shadow:
+      inset 3px 3px 6px var(--neu-shadow-dark),
+      inset -2px -2px 4px var(--neu-shadow-light);
+    outline: none;
+  }
+
+  .neu-sidebar {
+    background-color: var(--neu-card);
+    border-radius: 0 0.75rem 0.75rem 0;
+    box-shadow:
+      2px 0 4px var(--neu-shadow-dark),
+      -1px 0 2px var(--neu-shadow-light);
+  }
+
+  .neu-text {
+    color: var(--neu-text);
+  }
+
+  .neu-text-muted {
+    color: var(--neu-text-muted);
+  }
+
+  .neu-accent {
+    background: linear-gradient(
+      135deg,
+      var(--neu-accent),
+      var(--neu-accent-light)
+    );
+    color: white;
+    border-radius: 0.75rem;
+    box-shadow:
+      4px 4px 8px var(--neu-shadow-dark),
+      -4px -4px 8px var(--neu-shadow-light);
+  }
+
+  /* Radix UI animation utilities for Tailwind v4 compatibility */
+  .animate-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-out {
+    animation: fadeOut 0.2s ease-in;
+  }
+
+  .fade-in-0 {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .fade-out-0 {
+    animation: fadeOut 0.2s ease-in;
+  }
+
+  .zoom-in-95 {
+    animation: zoomIn 0.2s ease-out;
+  }
+
+  .zoom-out-95 {
+    animation: zoomOut 0.2s ease-in;
+  }
+
+  .slide-in-from-top-2 {
+    animation: slideInFromTop 0.2s ease-out;
+  }
+
+  .slide-in-from-bottom-2 {
+    animation: slideInFromBottom 0.2s ease-out;
+  }
+
+  .slide-in-from-left-2 {
+    animation: slideInFromLeft 0.2s ease-out;
+  }
+
+  .slide-in-from-right-2 {
+    animation: slideInFromRight 0.2s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zoomOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Custom breakpoint for 770px issue */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .task-detail-sidebar {
+    display: none !important;
   }
 }
