@@ -7,6 +7,7 @@ import {
   useGetTasksByTodolistQuery,
 } from '../../tasks/services/taskApi';
 import { useGetAllTodolistsQuery } from '../services/todolistApi';
+import { TodolistType } from '../types';
 import TaskCardList from '../../tasks/components/task-display/TaskCardList';
 import NewTask from '../../tasks/components/task-forms/TaskForm';
 import RenameTodolistDialog from '../dialogs/RenameTodolistDialog';
@@ -63,7 +64,7 @@ const TodolistView = ({ todolistId }: { todolistId: string }) => {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            {[...Array(3)].map((_, i) => (
+            {[...Array(3)].map((_: unknown, i: number) => (
               <div key={i} className="flex flex-col gap-2">
                 <Skeleton className="h-16 w-full" />
                 <Separator />
@@ -108,7 +109,7 @@ const TodolistView = ({ todolistId }: { todolistId: string }) => {
   if (!todolist) return null;
 
   const todolistName = todolist?.find(
-    (todolist) => todolist.id === selectedItem
+    (t: TodolistType) => t.id === selectedItem
   )?.name;
 
   const todolistAmount = todolist?.length;
@@ -199,7 +200,7 @@ const TodolistView = ({ todolistId }: { todolistId: string }) => {
             </div>
           ) : tasksLoading ? (
             <div className="flex flex-col gap-2">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(3)].map((_: unknown, i: number) => (
                 <div key={i} className="flex flex-col gap-2">
                   <Skeleton className="h-16 w-full" />
                   <Separator />

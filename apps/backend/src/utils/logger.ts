@@ -1,4 +1,5 @@
 import pino from 'pino';
+import type { Request } from 'express';
 import { validateServerEnv } from '../config/env';
 
 let loggerInstance: pino.Logger | null = null;
@@ -61,7 +62,7 @@ export const logger = new Proxy({} as pino.Logger, {
 });
 
 // Create a child logger for HTTP requests
-export const createRequestLogger = (req: any) => {
+export const createRequestLogger = (req: Request) => {
   return logger.child({
     requestId: req.id,
     userId: req.user?.id,

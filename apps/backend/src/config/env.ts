@@ -12,7 +12,7 @@ export const serverEnvSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.string().transform(Number).default(3000),
-  HOST: z.string().default('localhost'),
+  HOST: z.string().default('0.0.0.0'),
 
   // Database configuration
   DATABASE: z.string().min(1, 'Database URL is required'),
@@ -94,11 +94,23 @@ export const serverEnvSchema = z.object({
 
   // Health check configuration
   HEALTH_CHECK_TIMEOUT_MS: z.string().transform(Number).default(5000),
+
+  // AI configuration
+  GOOGLE_API_KEY: z.string().optional(),
+  AI_MODEL: z.string().default('gemini-flash-latest'),
+  AI_TEMPERATURE: z
+    .string()
+    .transform(Number)
+    .default(0.7)
+    .refine(
+      (val) => val >= 0 && val <= 1,
+      'Temperature must be between 0 and 1'
+    ),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 // Environment validation function
-export function validateServerEnv(env: Record<string, any>) {
+export function validateServerEnv(env: Record<string, unknown>) {
   return serverEnvSchema.parse(env);
 }

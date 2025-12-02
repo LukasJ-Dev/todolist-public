@@ -20,6 +20,8 @@
     "test:ci": "jest --ci --coverage --watchAll=false"
   },
   "dependencies": {
+    "@langchain/core": "^1.0.6",
+    "@langchain/google-genai": "^1.0.3",
     "@todolist/config": "workspace:*",
     "@todolist/types": "workspace:*",
     "@types/cookie-parser": "^1.4.9",
@@ -32,11 +34,14 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "langchain": "^1.0.6",
     "mongoose": "^7.8.7",
     "morgan": "^1.10.1",
     "pino": "^9.9.5",
     "pino-http": "^10.5.0",
     "pino-pretty": "^13.1.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.1.8"

@@ -246,7 +246,7 @@ export function readAccessFromRequest(
   cookieName?: string
 ): string | null {
   const service = createCookieService(validateServerEnv(process.env));
-  return service.readAccessFromRequest(req as any, cookieName);
+  return service.readAccessFromRequest(req as RequestWithCookies, cookieName);
 }
 
 /**
@@ -257,7 +257,7 @@ export function parseRefreshFromRequest(
   cookieName?: string
 ): string | null {
   const service = createCookieService(validateServerEnv(process.env));
-  return service.parseRefreshFromRequest(req as any, cookieName);
+  return service.parseRefreshFromRequest(req as RequestWithCookies, cookieName);
 }
 
 /**

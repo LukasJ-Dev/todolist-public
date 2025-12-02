@@ -6,8 +6,10 @@ import TodolistView from '../features/todolists/components/TodolistView';
 import SearchView from '../features/tasks/components/task-display/SearchView';
 import InboxView from '../features/tasks/components/task-display/InboxView';
 import UpcomingView from '../features/tasks/components/task-display/UpcomingView';
+import ChatView from '../features/ai/components/ChatView';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useGetAllTodolistsQuery } from '../features/todolists/services/todolistApi';
+import { TodolistType } from '../features/todolists/types';
 
 export default function Dashboard() {
   const selectedItem = useSelector(selectSelectedItem);
@@ -18,11 +20,14 @@ export default function Dashboard() {
     if (
       selectedItem === 'Inbox' ||
       selectedItem === 'Search' ||
-      selectedItem === 'Upcoming'
+      selectedItem === 'Upcoming' ||
+      selectedItem === 'AI Assistant'
     ) {
       return selectedItem;
     }
-    const todolist = todolists?.find((t: any) => t.id === selectedItem);
+    const todolist = todolists?.find(
+      (t: TodolistType) => t.id === selectedItem
+    );
     return todolist?.name || 'Todolist';
   };
 
@@ -48,6 +53,8 @@ export default function Dashboard() {
               <SearchView />
             ) : selectedItem === 'Upcoming' ? (
               <UpcomingView />
+            ) : selectedItem === 'AI Assistant' ? (
+              <ChatView />
             ) : (
               <TodolistView todolistId={selectedItem} />
             )}

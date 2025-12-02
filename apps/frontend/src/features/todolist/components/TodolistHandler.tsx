@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { AppDispatch } from '../../../app/store';
 import { useGetAllTodolistsQuery } from '../../todolists/services/todolistApi';
+import { TodolistType } from '../../todolists/types';
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +18,14 @@ import NewTodolistDialog from '../../todolists/dialogs/NewTodolistDialog';
 import { Skeleton } from '../../../components/UI/skeleton';
 import { Button } from '../../../components/UI/button';
 
-import { Inbox, Search, Calendar, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  Inbox,
+  Search,
+  Calendar,
+  AlertCircle,
+  RefreshCw,
+  Bot,
+} from 'lucide-react';
 import { selectSelectedItem } from '../../ui/uiSelector';
 import { setSelectedItem } from '../../ui/uiSlice';
 import { FaPlus } from 'react-icons/fa';
@@ -36,6 +44,10 @@ const items = [
   {
     title: 'Upcoming',
     icon: Calendar,
+  },
+  {
+    title: 'AI Assistant',
+    icon: Bot,
   },
 ];
 
@@ -117,7 +129,7 @@ function TodolistHandler() {
               </div>
             ) : (
               <SidebarMenu>
-                {todolists?.map((item: any) => (
+                {todolists?.map((item: TodolistType) => (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton asChild>
                       <a

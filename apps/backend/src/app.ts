@@ -1,10 +1,11 @@
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import express, { Express } from 'express';
+import express, { Express, RequestHandler } from 'express';
 import mongoSanitize from 'express-mongo-sanitize';
 import cors from 'cors';
 import morgan from 'morgan';
 import pinoHttp from 'pino-http';
+import type pino from 'pino';
 import swaggerUi from 'swagger-ui-express';
 import router from './routes/routes';
 import { requestId } from './middlewares/request_id';
@@ -33,7 +34,7 @@ app.use(requestId);
 // HTTP logging middleware (must be after requestId)
 app.use(
   pinoHttp({
-    logger: logger as any, // Type assertion to fix compatibility issue
+    logger: logger as pino.Logger, // Type assertion to fix compatibility issue
     genReqId: (req) => req.id, // Use our correlation ID
     customLogLevel: (_req, res, err) => {
       if (res.statusCode >= 400 && res.statusCode < 500) {
@@ -154,10 +155,17 @@ app.get('/health/database', async (_req, res) => {
 });
 
 // API Documentation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use(
   '/api-docs',
-  ...(swaggerUi.serve as any),
-  (swaggerUi.setup as any)(swaggerSpec, {
+  ...(swaggerUi.serve as unknown as RequestHandler[]),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (
+    swaggerUi.setup as unknown as (
+      spec: unknown,
+      options: unknown
+    ) => RequestHandler
+  )(swaggerSpec, {
     explorer: true,
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'TodoList API Documentation',

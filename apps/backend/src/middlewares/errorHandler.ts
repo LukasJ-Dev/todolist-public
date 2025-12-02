@@ -3,7 +3,7 @@ import { AppError } from '../utils/appError';
 import { logger } from '../utils/logger';
 
 export function errorHandler(
-  err: any,
+  err: unknown,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -11,7 +11,10 @@ export function errorHandler(
   const error =
     err instanceof AppError
       ? err
-      : new AppError(`Internal Server Error: ${err.message}`, 500);
+      : new AppError(
+          `Internal Server Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          500
+        );
 
   const status = error.statusCode || 500;
 

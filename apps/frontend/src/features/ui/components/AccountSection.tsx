@@ -32,9 +32,17 @@ export default function AccountSection() {
       await logout().unwrap();
       toast.success('Logged out successfully');
       navigate('/login');
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.data?.message || 'Failed to logout. Please try again.';
+        error &&
+        typeof error === 'object' &&
+        'data' in error &&
+        error.data &&
+        typeof error.data === 'object' &&
+        'message' in error.data &&
+        typeof error.data.message === 'string'
+          ? error.data.message
+          : 'Failed to logout. Please try again.';
       toast.error('Logout failed', {
         description: errorMessage,
       });

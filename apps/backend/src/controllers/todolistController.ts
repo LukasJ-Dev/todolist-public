@@ -1,15 +1,8 @@
 import { Request, Response } from 'express';
 import { BaseController } from './BaseController';
-import { TodolistModel } from '../models/todolistModel';
-import { TaskModel } from '../models/taskModel';
 import { catchAsync } from '../utils/catchAsync';
-import { AppError } from '../utils/appError';
-import {
-  toObjectId,
-  validateOwnership,
-  withTransaction,
-} from '../utils/database';
 import { ServerEnv } from '../config/env';
+import { todolistService } from '../services/todolist/todolistService';
 
 /**
  * Todolist controller with environment dependency injection and clean service management
@@ -25,18 +18,7 @@ export class TodolistController extends BaseController {
   getMyTodolists = catchAsync(async (req: Request, res: Response) => {
     const userId = this.validateUser(req);
 
-    let todolists = await TodolistModel.find({ owner: userId }).sort({
-      createdAt: -1,
-    });
-
-    // Create default todolist if user has none
-    if (todolists.length === 0) {
-      const defaultTodolist = await TodolistModel.create({
-        name: 'My First Todolist',
-        owner: userId,
-      });
-      todolists = [defaultTodolist];
-    }
+    const todolists = await todolistService.getTodolists(userId);
 
     this.sendSuccess(res, { todolists });
   });
@@ -49,26 +31,16 @@ export class TodolistController extends BaseController {
 
     this.logOperation(req, 'Creating todolist', req.body);
 
-    // Check if todolist with same name already exists for this user
-    const existingTodolist = await TodolistModel.findOne({
+    const { todolist } = await todolistService.createTodolist({
       name: req.body.name,
-      owner: userId,
-    });
-
-    if (existingTodolist) {
-      throw new AppError('A todolist with this name already exists', 409);
-    }
-
-    const newTodolist = await TodolistModel.create({
-      name: req.body.name,
-      owner: userId,
+      userId,
     });
 
     this.logOperation(req, 'Todolist created successfully', {
-      todolistId: newTodolist._id,
+      todolistId: todolist._id,
     });
 
-    this.sendCreated(res, { todolist: newTodolist });
+    this.sendCreated(res, { todolist });
   });
 
   /**
@@ -82,40 +54,16 @@ export class TodolistController extends BaseController {
       updates: Object.keys(req.body),
     });
 
-    // Find and validate ownership
-    const todolistId = toObjectId(req.params.todolist);
-    const todolist = await TodolistModel.findOne({
-      _id: todolistId,
-      owner: userId,
-    });
-
-    validateOwnership(
-      todolist as unknown as { owner?: string },
+    const editedTodolist = await todolistService.updateTodolist(
+      req.params.todolist,
       userId,
-      'Todolist'
-    );
-
-    // Check if new name conflicts with existing todolist
-    if (req.body.name && req.body.name !== todolist?.name) {
-      const existingTodolist = await TodolistModel.findOne({
+      {
         name: req.body.name,
-        owner: userId,
-        _id: { $ne: todolistId },
-      });
-
-      if (existingTodolist) {
-        throw new AppError('A todolist with this name already exists', 409);
       }
-    }
-
-    const editedTodolist = await TodolistModel.findOneAndUpdate(
-      { _id: todolistId, owner: userId },
-      req.body,
-      { new: true, runValidators: true }
     );
 
     this.logOperation(req, 'Todolist updated successfully', {
-      todolistId,
+      todolistId: req.params.todolist,
       updates: Object.keys(req.body),
     });
 
@@ -132,35 +80,11 @@ export class TodolistController extends BaseController {
       todolistId: req.params.todolist,
     });
 
-    // Find and validate ownership
-    const todolistId = toObjectId(req.params.todolist);
-    const todolist = await TodolistModel.findOne({
-      _id: todolistId,
-      owner: userId,
+    await todolistService.deleteTodolist(req.params.todolist, userId);
+
+    this.logOperation(req, 'Todolist deleted successfully', {
+      todolistId: req.params.todolist,
     });
-
-    validateOwnership(
-      todolist as unknown as { owner?: string },
-      userId,
-      'Todolist'
-    );
-
-    // Use transaction to ensure atomicity
-    await withTransaction(async (session) => {
-      // Delete all tasks in the todolist
-      await TaskModel.deleteMany(
-        { todolist: todolistId },
-        session ? { session } : {}
-      );
-
-      // Delete the todolist
-      await TodolistModel.deleteOne(
-        { _id: todolistId, owner: userId },
-        session ? { session } : {}
-      );
-    });
-
-    this.logOperation(req, 'Todolist deleted successfully', { todolistId });
 
     this.sendNoContent(res, { message: 'Todolist deleted successfully' });
   });

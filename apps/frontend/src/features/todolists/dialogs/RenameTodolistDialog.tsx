@@ -69,9 +69,17 @@ export default function RenameTodolistDialog({
         description: `Todolist has been renamed to "${values.name}".`,
       });
       setOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.data?.message || 'Failed to rename todolist. Please try again.';
+        error &&
+        typeof error === 'object' &&
+        'data' in error &&
+        error.data &&
+        typeof error.data === 'object' &&
+        'message' in error.data &&
+        typeof error.data.message === 'string'
+          ? error.data.message
+          : 'Failed to rename todolist. Please try again.';
       toast.error('Rename failed', {
         description: errorMessage,
       });

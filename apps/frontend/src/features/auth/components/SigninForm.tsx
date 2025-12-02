@@ -2,7 +2,7 @@ import { Button } from '../../../components/UI/button';
 import { Input } from '../../../components/UI/input';
 import { Spinner } from '../../../components/UI/spinner';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, type ControllerRenderProps } from 'react-hook-form';
 import {
   Form,
   FormControl,
@@ -36,11 +36,22 @@ export default function SigninForm() {
         description: 'You have been successfully signed in.',
       });
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.data?.message ||
-        error?.message ||
-        'Failed to sign in. Please try again.';
+        error &&
+        typeof error === 'object' &&
+        'data' in error &&
+        error.data &&
+        typeof error.data === 'object' &&
+        'message' in error.data &&
+        typeof error.data.message === 'string'
+          ? error.data.message
+          : error &&
+              typeof error === 'object' &&
+              'message' in error &&
+              typeof error.message === 'string'
+            ? error.message
+            : 'Failed to sign in. Please try again.';
       toast.error('Sign in failed', {
         description: errorMessage,
       });
@@ -53,7 +64,11 @@ export default function SigninForm() {
         <FormField
           control={form.control}
           name="email"
-          render={({ field }) => (
+          render={({
+            field,
+          }: {
+            field: ControllerRenderProps<SigninFormData, 'email'>;
+          }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
@@ -71,7 +86,11 @@ export default function SigninForm() {
         <FormField
           control={form.control}
           name="password"
-          render={({ field }) => (
+          render={({
+            field,
+          }: {
+            field: ControllerRenderProps<SigninFormData, 'password'>;
+          }) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>

@@ -107,9 +107,17 @@ export function EnhancedTaskForm({
       setTags([]);
       setIsRecurring(false);
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.data?.message || 'Failed to create task. Please try again.';
+        error &&
+        typeof error === 'object' &&
+        'data' in error &&
+        error.data &&
+        typeof error.data === 'object' &&
+        'message' in error.data &&
+        typeof error.data.message === 'string'
+          ? error.data.message
+          : 'Failed to create task. Please try again.';
       toast.error('Creation failed', {
         description: errorMessage,
       });

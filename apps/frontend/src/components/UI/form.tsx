@@ -55,13 +55,16 @@ const useFormField = () => {
 
   const { id } = itemContext;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const typedFieldState = fieldState as any; // Required due to react-hook-form type limitations
+
   return {
     id,
     name: fieldContext.name,
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
-    ...fieldState,
+    ...typedFieldState,
   };
 };
 
