@@ -50,7 +50,16 @@ export const serverEnvSchema = z.object({
   REFRESH_COOKIE_NAME: z.string().default('refreshToken'),
 
   // CORS configuration
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  CORS_ORIGIN: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((val) => {
+      // Support comma-separated list of origins
+      if (val.includes(',')) {
+        return val.split(',').map((origin) => origin.trim());
+      }
+      return val;
+    }),
   CORS_CREDENTIALS: z
     .string()
     .transform((val) => val === 'true')
@@ -62,7 +71,7 @@ export const serverEnvSchema = z.object({
   RATE_LIMIT_AUTH_WINDOW_MS: z.string().transform(Number).default(900000), // 15 minutes
   RATE_LIMIT_AUTH_MAX_REQUESTS: z.string().transform(Number).default(10),
   RATE_LIMIT_STRICT_WINDOW_MS: z.string().transform(Number).default(300000), // 5 minutes
-  RATE_LIMIT_STRICT_MAX_REQUESTS: z.string().transform(Number).default(5),
+  RATE_LIMIT_STRICT_MAX_REQUESTS: z.string().transform(Number).default(100), // Increased for admin dashboard usage
   RATE_LIMIT_REGISTRATION_WINDOW_MS: z
     .string()
     .transform(Number)
@@ -106,6 +115,10 @@ export const serverEnvSchema = z.object({
       (val) => val >= 0 && val <= 1,
       'Temperature must be between 0 and 1'
     ),
+
+  // Admin configuration
+  ADMIN_IP_WHITELIST: z.string().optional(), // Comma-separated IP addresses
+  ADMIN_PASSWORD_HASH: z.string().optional(), // Bcrypt hash of 128-char password
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

@@ -3,6 +3,7 @@ import { BaseController } from './BaseController';
 import { catchAsync } from '../utils/catchAsync';
 import { ServerEnv } from '../config/env';
 import { taskService } from '../services/task/taskService';
+import { AppError } from '../utils/appError';
 
 /**
  * Task controller with environment dependency injection and clean service management
@@ -59,6 +60,34 @@ export class TaskController extends BaseController {
    */
   createTask = catchAsync(async (req: Request, res: Response) => {
     const userId = this.validateUser(req);
+
+    // Check restrictions and limits
+    const { userModel } = await import('../models/userModel');
+    const { globalSettingsService } = await import('../services/admin/globalSettingsService');
+    const { checkRestriction, checkLimit } = await import('../utils/userRestrictions');
+    const { TaskModel } = await import('../models/taskModel');
+
+    const user = await userModel.findById(userId);
+    const globalSettings = await globalSettingsService.getGlobalSettings();
+
+    // Check restriction
+    if (checkRestriction(user, 'createTasksDisabled', globalSettings.restrictions)) {
+      throw new AppError(
+        'Creating new tasks is currently disabled for your account',
+        403
+      );
+    }
+
+    // Check limit
+    const taskCount = await TaskModel.countDocuments({ owner: userId });
+    if (checkLimit(user, 'maxTasks', taskCount, globalSettings.limits)) {
+      const { getEffectiveLimit } = await import('../utils/userRestrictions');
+      const effectiveLimit = getEffectiveLimit(user, 'maxTasks', globalSettings.limits);
+      throw new AppError(
+        `You have reached the maximum limit of ${effectiveLimit} tasks`,
+        403
+      );
+    }
 
     this.logOperation(req, 'Creating task', req.body);
 

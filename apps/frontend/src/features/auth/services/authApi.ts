@@ -62,6 +62,15 @@ export const authApi = baseApi.injectEndpoints({
         }
       },
     }),
+    demo: builder.mutation<User, void>({
+      query: () => ({
+        url: '/auth/demo',
+        method: 'POST',
+      }),
+      transformResponse: (response: ApiSuccessResponse<{ user: User }>) =>
+        response.data.user,
+      invalidatesTags: ['User'],
+    }),
     getSessions: builder.query<
       Session[],
       { includeRevoked?: boolean; limit?: number }
@@ -86,4 +95,5 @@ export const {
   useMeQuery,
   useLogoutMutation,
   useGetSessionsQuery,
+  useDemoMutation,
 } = authApi;

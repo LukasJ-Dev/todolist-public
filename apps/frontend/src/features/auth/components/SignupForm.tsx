@@ -42,9 +42,9 @@ export default function SignupForm() {
       await refetch();
       toast.success('Account created!', {
         description:
-          'Welcome to TodoList! Your account has been created successfully.',
+          'Welcome to Task Management App! Your account has been created successfully.',
       });
-      navigate('/');
+      navigate('/app');
     } catch (error: unknown) {
       const errorMessage =
         error &&

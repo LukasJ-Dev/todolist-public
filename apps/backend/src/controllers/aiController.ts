@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { processChatMessage } from '../services/ai';
 import { memoryService } from '../services/ai/memory';
 import { TodolistModel } from '../models/todolistModel';
+import { AppError } from '../utils/appError';
 
 /**
  * AI Controller for handling chat interactions
@@ -17,6 +18,36 @@ export class AIController extends BaseController {
   chat = catchAsync(async (req: Request, res: Response) => {
     const userId = this.validateUser(req);
     const { message, conversationId } = req.body;
+
+    // Check restrictions and limits
+    const { userModel } = await import('../models/userModel');
+    const { globalSettingsService } = await import('../services/admin/globalSettingsService');
+    const { checkRestriction, checkLimit, getEffectiveLimit } = await import('../utils/userRestrictions');
+    const { ConversationMessageModel } = await import('../models/conversationMessageModel');
+
+    const user = await userModel.findById(userId);
+    const globalSettings = await globalSettingsService.getGlobalSettings();
+
+    // Check restriction
+    if (checkRestriction(user, 'aiDisabled', globalSettings.restrictions)) {
+      throw new AppError(
+        'AI features are currently disabled for your account',
+        403
+      );
+    }
+
+    // Check limit - count user's AI messages
+    const aiMessageCount = await ConversationMessageModel.countDocuments({
+      userId,
+      role: 'user', // Count user messages as AI interactions
+    });
+    if (checkLimit(user, 'maxAIMessages', aiMessageCount, globalSettings.limits)) {
+      const effectiveLimit = getEffectiveLimit(user, 'maxAIMessages', globalSettings.limits);
+      throw new AppError(
+        `You have reached the maximum limit of ${effectiveLimit} AI messages`,
+        403
+      );
+    }
 
     // Generate or use existing conversation ID (must be before processing for memory)
     const convId = conversationId || `conv_${randomUUID()}`;

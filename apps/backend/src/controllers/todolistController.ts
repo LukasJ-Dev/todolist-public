@@ -3,6 +3,7 @@ import { BaseController } from './BaseController';
 import { catchAsync } from '../utils/catchAsync';
 import { ServerEnv } from '../config/env';
 import { todolistService } from '../services/todolist/todolistService';
+import { AppError } from '../utils/appError';
 
 /**
  * Todolist controller with environment dependency injection and clean service management
@@ -28,6 +29,33 @@ export class TodolistController extends BaseController {
    */
   createTodolist = catchAsync(async (req: Request, res: Response) => {
     const userId = this.validateUser(req);
+
+    // Check restrictions and limits
+    const { userModel } = await import('../models/userModel');
+    const { globalSettingsService } = await import('../services/admin/globalSettingsService');
+    const { checkRestriction, checkLimit, getEffectiveLimit } = await import('../utils/userRestrictions');
+    const { TodolistModel } = await import('../models/todolistModel');
+
+    const user = await userModel.findById(userId);
+    const globalSettings = await globalSettingsService.getGlobalSettings();
+
+    // Check restriction
+    if (checkRestriction(user, 'createTodolistsDisabled', globalSettings.restrictions)) {
+      throw new AppError(
+        'Creating new todolists is currently disabled for your account',
+        403
+      );
+    }
+
+    // Check limit
+    const todolistCount = await TodolistModel.countDocuments({ owner: userId });
+    if (checkLimit(user, 'maxTodolists', todolistCount, globalSettings.limits)) {
+      const effectiveLimit = getEffectiveLimit(user, 'maxTodolists', globalSettings.limits);
+      throw new AppError(
+        `You have reached the maximum limit of ${effectiveLimit} todolists`,
+        403
+      );
+    }
 
     this.logOperation(req, 'Creating todolist', req.body);
 

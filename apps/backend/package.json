@@ -17,9 +17,11 @@
     "test:e2e": "jest tests/e2e/",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "populate": "tsx src/scripts/populate.ts"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.1.0",
     "@langchain/core": "^1.0.6",
     "@langchain/google-genai": "^1.0.3",
     "@todolist/config": "workspace:*",

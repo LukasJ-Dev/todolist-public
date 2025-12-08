@@ -30,6 +30,9 @@ router.post(
   authController.login
 );
 
+// Demo account creation with moderate rate limiting
+router.post('/demo', authLimiter, authController.demo);
+
 // Logout (protected route)
 router.post('/logout', requireAuthWithUser, authController.logout);
 

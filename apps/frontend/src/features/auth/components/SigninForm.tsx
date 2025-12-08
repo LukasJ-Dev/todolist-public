@@ -35,7 +35,7 @@ export default function SigninForm() {
       toast.success('Welcome back!', {
         description: 'You have been successfully signed in.',
       });
-      navigate('/');
+      navigate('/app');
     } catch (error: unknown) {
       const errorMessage =
         error &&

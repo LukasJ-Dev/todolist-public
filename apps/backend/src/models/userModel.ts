@@ -6,6 +6,19 @@ export interface IUser extends Document {
   email: string;
   password: string;
   token?: string;
+  restrictions?: {
+    aiDisabled?: boolean;
+    createTodolistsDisabled?: boolean;
+    createTasksDisabled?: boolean;
+    loginDisabled?: boolean;
+  };
+  limits?: {
+    maxTodolists?: number;
+    maxTasks?: number;
+    maxAIMessages?: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
 
   checkPassword(password: string): Promise<boolean>;
 }
@@ -14,36 +27,58 @@ export interface IUserModel extends Model<IUser> {
   validateCredentials(email: string, password: string): Promise<IUser | null>;
 }
 
-const UserSchema = new Schema<IUser>({
-  name: {
-    type: String,
-    required: [true, 'Name is required'],
-    trim: true,
-    maxlength: [50, 'Name cannot exceed 50 characters'],
-    minlength: [2, 'Name must be at least 2 characters'],
+const UserSchema = new Schema<IUser>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Name is required'],
+      trim: true,
+      maxlength: [50, 'Name cannot exceed 50 characters'],
+      minlength: [2, 'Name must be at least 2 characters'],
+    },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        'Please enter a valid email',
+      ],
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      select: false,
+      minlength: [6, 'Password must be at least 6 characters'],
+    },
+    token: {
+      type: String,
+      select: false,
+    },
+    restrictions: {
+      type: {
+        aiDisabled: { type: Boolean, default: false },
+        createTodolistsDisabled: { type: Boolean, default: false },
+        createTasksDisabled: { type: Boolean, default: false },
+        loginDisabled: { type: Boolean, default: false },
+      },
+      default: {},
+    },
+    limits: {
+      type: {
+        maxTodolists: { type: Number, min: 0 },
+        maxTasks: { type: Number, min: 0 },
+        maxAIMessages: { type: Number, min: 0 },
+      },
+      default: {},
+    },
   },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [
-      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-      'Please enter a valid email',
-    ],
-  },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    select: false,
-    minlength: [6, 'Password must be at least 6 characters'],
-  },
-  token: {
-    type: String,
-    select: false,
-  },
-});
+  {
+    timestamps: true, // Automatically adds createdAt and updatedAt
+  }
+);
 
 // Hash password before saving
 UserSchema.pre('save', async function (next) {

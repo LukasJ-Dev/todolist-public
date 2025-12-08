@@ -53,8 +53,76 @@ app.use(
   })
 );
 
-// Security headers
-app.use(helmet());
+// CORS must be before rate limiting to handle preflight requests
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // In development, allow requests with no origin (e.g., Postman, mobile apps, same-origin requests)
+      if (env.NODE_ENV === 'development' && !origin) {
+        return callback(null, true);
+      }
+
+      // Handle array of origins (from comma-separated CORS_ORIGIN)
+      const allowedOrigins = Array.isArray(env.CORS_ORIGIN)
+        ? env.CORS_ORIGIN
+        : [env.CORS_ORIGIN];
+
+      // In development, allow any localhost origin (with any port)
+      if (env.NODE_ENV === 'development') {
+        if (
+          origin &&
+          (origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1') ||
+            origin.startsWith('http://0.0.0.0'))
+        ) {
+          return callback(null, true);
+        }
+      }
+
+      // Log in development for debugging
+      if (env.NODE_ENV === 'development') {
+        logger.debug(
+          {
+            origin,
+            allowedOrigins,
+            isAllowed: !origin || allowedOrigins.includes(origin),
+          },
+          'CORS origin check'
+        );
+      }
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(
+          {
+            origin,
+            allowedOrigins,
+          },
+          'CORS: Origin not allowed'
+        );
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'x-admin-password', // Required for admin endpoints
+    ],
+    exposedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// Security headers (configured to not interfere with CORS)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false, // Allow embedding for development
+  })
+);
 
 // Apply standard rate limiting to all API routes
 app.use(apiURL, standardLimiter);
@@ -62,13 +130,6 @@ app.use(apiURL, standardLimiter);
 app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
 app.use(mongoSanitize());
-
-app.use(
-  cors({
-    origin: env.CORS_ORIGIN,
-    credentials: true,
-  })
-);
 
 app.use(morgan('dev'));
 
